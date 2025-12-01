@@ -1,0 +1,79 @@
+# ─────────────────────────────────────────────
+# Python + uv project .gitignore
+# ─────────────────────────────────────────────
+
+# Artifacts
+**/*.pt
+**/*.jsonl
+experiments/
+
+
+# uv virtual environment (default location)
+.venv/
+
+# uv lockfile cache (optional, remove if you commit lockfile state)
+.uv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs / debug
+*.log
+*.pot
+*.po
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+htmlcov/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# MyPy / PyRight / Ruff / other tooling
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+ruff_cache/
+
+# Environments (if not using uv)
+env/
+venv/
+
+# IDE/project-specific
+.vscode/
+.idea/
+*.iml
+
+# OS / editor junk
+.DS_Store
+*.swp
+*.swo
+Thumbs.db

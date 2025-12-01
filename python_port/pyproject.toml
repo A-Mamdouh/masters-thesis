@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "NLS-Python"
+version = "0.1.0"
+description = "Porting the natural language semantics Java implementation to Python"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"  # safer for ROCm wheels today
+dependencies = [
+  "matplotlib>=3.10.7",
+  "numpy>=2.3.4",
+  "pydantic>=2.12.4",
+  "rich>=14.2.0",
+  "ruff>=0.14.4",
+  "tensorboard>=2.20.0",
+  "tqdm>=4.67.1",
+  "transformers[torch]>=4.57.1",
+  "typeguard>=4.4.4",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+# Exactly one of these must be chosen per environment:
+cpu = [
+  "torch>=2.7.0",
+  "torchvision>=0.22.0",
+]
+cu126 = [
+  "torch>=2.7.0",
+  "torchvision>=0.22.0",
+]
+rocm = [
+  "torch>=2.7.0",
+  "torchvision>=0.22.0",
+  # ROCm builds require Triton on Linux
+  "pytorch-triton-rocm>=3.3.0 ; sys_platform == 'linux'",
+]
+
+[tool.uv]
+# prevent mixing backends
+conflicts = [
+  [ { extra = "cpu" },  { extra = "cu126" } ],
+  [ { extra = "cpu" },  { extra = "rocm"  } ],
+  [ { extra = "cu126" },{ extra = "rocm"  } ],
+]
+
+# Route each package to exactly one index, gated by its extra.
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu",   extra = "cpu" },
+  { index = "pytorch-cu126", extra = "cu126" },
+  { index = "pytorch-rocm",  extra = "rocm", marker = "sys_platform == 'linux'" },
+]
+torchvision = [
+  { index = "pytorch-cpu",   extra = "cpu" },
+  { index = "pytorch-cu126", extra = "cu126" },
+  { index = "pytorch-rocm",  extra = "rocm", marker = "sys_platform == 'linux'" },
+]
+
+pytorch-triton-rocm = [
+  { index = "pytorch-rocm",  extra = "rocm", marker = "sys_platform == 'linux'" },
+]
+
+# Named PyTorch indexes, scoped only to these packages
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url  = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url  = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-rocm"
+url  = "https://download.pytorch.org/whl/rocm6.3"
+explicit = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.0",
+]
