@@ -74,12 +74,12 @@ NeuralPolicy & 9{,}083.4 & 794.9 & 0.33 & Lower solve rate on longer variants \\
 The branch-ordering agreement metric from \S\ref{sec:eval-metrics} was computed for the
 CustomJava scorer against the Java reference ordering. On the annotated regression set the
 mean Spearman $\rho$ is $1.0$ with top-$5$ accuracy of $1.0$ (per
-`experiments/policies/summary.json`).
+\texttt{experiments/policies/summary.json}).
 
 \paragraph{Training metrics (Design B).}
 The trace-regression phase reports mean-squared error declining from $0.1466$ in epoch~1
 to $7.7 \times 10^{-4}$ by epoch~10, while binary trace-alignment accuracy reaches $1.0$
-from epoch~2 onward (`experiments/policies/CustomJava_logs/metrics.json`). Preference
+from epoch~2 onward (\texttt{experiments/policies/CustomJava\_logs/metrics.json}). Preference
 fine-tuning was not run for the compiled results.
 
 For completeness, the baseline sweep over the 4-story set is not tabulated here; aggregate values are available in the accompanying logs (see Appendix~\ref{app:reproducibility}).
