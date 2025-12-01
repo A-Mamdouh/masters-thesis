@@ -1,34 +1,36 @@
 \chapter{Reproducibility}
 \label{app:reproducibility}
 
-This appendix explains how to rebuild all experiments reported in Chapter~\ref{ch:experiments} using the two reference implementations that live in this repository: the Java engine under \texttt{design\_java/} (Design~A) and the Python port under \texttt{python\_port/} (Design~B). The instructions assume the project root \texttt{/home/ahmed/projects/masters}; adjust the paths if you cloned the repository elsewhere.
+This appendix explains how to rebuild all experiments reported in Chapter~\ref{ch:experiments} using the two reference implementations in this repository: the Java engine under \path{design_java/} (Design~A) and the Python port under \path{python_port/} (Design~B). The instructions assume the project root \path{/home/ahmed/projects/masters}; adjust the paths if you cloned the repository elsewhere. This thesis is fully versioned at \href{https://github.com/A-Mamdouh/masters-thesis}{github.com/A-Mamdouh/masters-thesis}.
 
 \section{Environment}
 \begin{itemize}
   \item \textbf{Operating system.} Linux or macOS. The thesis results were collected on 6.12.48-1-MANJARO.
   \item \textbf{CPU.} Multi-core CPU recommended. Java runs use up to 12 worker threads.
-  \item \textbf{RAM.} \(\geq\)16~GB recommended (8~GB is sufficient for Java plus moderate Python experiments).
+  \item \textbf{RAM.} 16~GB or more recommended (8~GB is sufficient for Java plus moderate Python experiments).
   \item \textbf{Java toolchain.} OpenJDK~17 or later; \texttt{javac} and \texttt{java} must be on \texttt{PATH}.
-  \item \textbf{Python toolchain.} Python>=3.11 with \texttt{pip} or \texttt{uv}. The port depends on PyTorch, NumPy, and tqdm. Use the supplied \texttt{python\_port/uv.lock} for deterministic installs via \texttt{uv sync}.
+  \item \textbf{Python toolchain.} Python~3.11+ with \texttt{pip} or \texttt{uv}. The port depends on PyTorch, NumPy, and tqdm. Use the supplied \path{python_port/uv.lock} for deterministic installs via \texttt{uv sync}.
   \item \textbf{GPU (optional).} Needed only if you want to accelerate neural policy training.
   \item \textbf{Random seeds.} Java relies on deterministic traversal; Python scripts fix seeds internally (training seed~40, evaluation seed~42, external heuristic seed~42). Set \texttt{PYTHONHASHSEED=0} for complete determinism.
 \end{itemize}
 
 \section{Repository layout}
 \begin{itemize}
-  \item \textbf{Design~A:} design\_java/
+  \item \textbf{Design~A:} \path{design_java/}
     \begin{compactitem}
-      \item \texttt{Main.java}: entry point for all Java experiments.
-      \item \texttt{modelGeneration/}: priority queue, tableau rules, heuristics.
-      \item \texttt{ontology/} and \texttt{stories/}: knowledge graph fragment and benchmark narratives.
-      \item Logs follow the filename pattern test\_results\_W\_workers\_Tms.txt (for example, test\_results\_12\_workers\_200ms.txt).
+      \item \path{Main.java}: entry point for all Java experiments.
+      \item \path{modelGeneration/}: priority queue, tableau rules, heuristics.
+      \item \path{ontology/} and \path{stories/}: knowledge graph fragment and benchmark narratives.
+      \item Logs follow the filename pattern \texttt{test\_results\_\allowbreak<W>\_\allowbreak{}workers\_\allowbreak<T>\allowbreak{}ms.txt} (for example, \texttt{test\_results\_\allowbreak12\_\allowbreak{}workers\_\allowbreak200ms.txt}).
     \end{compactitem}
-  \item \textbf{Design~B:} python\_port/
+  \item \textbf{Design~B:} \path{python_port/}
     \begin{compactitem}
-      \item src/nls\_python/model\_generation/: tableau port, policies, neural helpers.
-      \item data/: annotated story sets (train.json, val.json, test.json, java\_design\_test.json).
-      \item experiments/policies/: saved logs (story\_bank\_results.txt, annotated\_test\_results.txt), summaries and checkpoints.
-      \item scripts/: bash helpers for batch experiments.
+      \item \path{src/nls_python/model_generation/}: tableau port, policies, neural helpers.
+      \item \path{data/}: annotated story sets (train.json, val.json, test.json,\\
+      java\_design\_test.json).
+      \item \path{experiments/policies/}: saved logs (story\_bank\_results.txt,\\
+      annotated\_test\_results.txt), summaries and checkpoints.
+      \item \path{scripts/}: bash helpers for batch experiments.
     \end{compactitem}
 \end{itemize}
 
@@ -38,15 +40,18 @@ This appendix explains how to rebuild all experiments reported in Chapter~\ref{c
 cd design_java
 javac $(find . -name "*.java")
 \end{verbatim}
-Recompile after every code change; incremental compilation is fast (
-\(<1\)~s on the reference machine).
+Recompile after every code change; incremental compilation is fast (<1~s on the reference machine).
 
 \subsection*{Sequential baseline (1 worker)}
 \begin{verbatim}
 cd design_java
 java Main 1 200 > test_results_1_workers_200ms.txt
 \end{verbatim}
-The numeric arguments denote \texttt{<workers>} and \texttt{<per-iteration-timeout-ms>}. The log records, for each story, the narrative sentences, heuristic statistics (time in ms, explored models, success flag), and separators for readability. Aggregated numbers in Table~\ref{tab:policy_runtimes_java} are the arithmetic mean across the five Java story variants included in the file.
+\begin{compactitem}
+  \item Arguments are \texttt{<workers>} and \texttt{<per-iteration-\allowbreak{}timeout-\allowbreak{}ms>}.
+  \item Each log block lists the story sentences and heuristic statistics (time in ms, explored models, success flag) with separators for readability.
+  \item Aggregated numbers in Table~\ref{tab:policy_runtimes_java} are the arithmetic mean across the five Java story variants included in the file.
+\end{compactitem}
 
 \subsection*{Parallel configuration (12 workers)}
 \begin{verbatim}
@@ -77,10 +82,13 @@ uv run python -m nls_python.model_generation.story_experiments \
   --timeout-ms 600 \
   --output experiments/policies/annotated_test_results.txt
 \end{verbatim}
-The resulting files contain one block per story with the same \texttt{HeuristicStatistics} summary used in Chapter~\ref{ch:results}. The averages quoted in Tables~\ref{tab:policy_python_results}--\ref{tab:cross_family_comparison} are computed from these files (mean across stories per policy).
+\begin{compactitem}
+  \item Each output file contains one block per story with the same \texttt{HeuristicStatistics} summary used in Chapter~\ref{ch:results}.
+  \item The averages quoted in Tables~\ref{tab:policy_python_results}--\ref{tab:cross_family_comparison} are computed from these files (mean across stories per policy).
+\end{compactitem}
 
 \subsection{Neural policy training and evaluation}
-The port provides a repeatable pipeline: dataset generation \(\rightarrow\) model training \(\rightarrow\) experiments. Commands use \texttt{uv run} to guarantee the locked dependency set.
+The port provides a repeatable pipeline: dataset generation, model training, then experiments. Commands use \texttt{uv run} to guarantee the locked dependency set.
 
 \paragraph{Generate supervision traces}
 \begin{verbatim}
@@ -117,7 +125,7 @@ This overwrites the earlier log with fresh neural numbers. To keep both versions
 
 \section{Logging and seed management}
 \begin{itemize}
-  \item \textbf{Logging.} Both implementations log individual story blocks followed by aggregate statistics. Keep the raw files (test\_results\_*.txt and experiments/policies/*.txt); the Results chapter cites these exact paths.
+  \item \textbf{Logging.} Both implementations log individual story blocks followed by aggregate statistics. Keep the raw files (\path{test_results_*.txt} and \path{experiments/policies/*.txt}); the Results chapter cites these exact paths.
   \item \textbf{Seeds.} Java relies on deterministic ordering; no additional flags are required. Python scripts set seeds internally, but you can override them via environment variables (\texttt{PYTHONHASHSEED}, \texttt{TORCH\_SEED}) or CLI options (see \texttt{python\_port/scripts/} for examples).
   \item \textbf{Hardware notes.} All timings in the thesis were collected on a 6-core/12-thread CPU with 32~GB RAM. When comparing against the reported numbers, ensure that the timeout, drain-size, and worker-count flags match those shown above and in Table~\ref{tab:run_configurations}.
 \end{itemize}

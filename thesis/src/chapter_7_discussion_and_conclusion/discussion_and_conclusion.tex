@@ -1,7 +1,7 @@
 \chapter{Discussion and Conclusion}
 \label{ch:discussion-conclusion}
 
-This chapter interprets the empirical findings of Chapter~\ref{ch:results}, ties them back to the guidance paradigms and design principles in Chapter~\ref{chap:systemdesign}, and states the main conclusions. We separate \emph{Discussion} (Section~\ref{sec:discussion}) from \emph{Conclusion} (Section~\ref{sec:conclusion}) to keep interpretation distinct from summary and outlook. The terminology remains consistent: a model generator over a tableau, salience at the rule level, and guidance from either symbolic policies (Design~A, Java) or learned scorers (Design~B, Python).
+This chapter interprets the empirical findings of Chapter~\ref{ch:results}, ties them back to the guidance paradigms and design principles in Chapter~\ref{cp:systemdesign}, and states the main conclusions. We separate \emph{Discussion} (Section~\ref{sec:discussion}) from \emph{Conclusion} (Section~\ref{sec:conclusion}) to keep interpretation distinct from summary and outlook. The terminology remains consistent: a model generator over a tableau, salience at the rule level, and guidance from either symbolic policies (Design~A, Java) or learned scorers (Design~B, Python).
 
 \section{Discussion}
 \label{sec:discussion}
@@ -25,7 +25,7 @@ On held-out stories, neither the trace-regression models nor the human-refined v
 These outcomes highlight a central challenge for learned guidance here: scorers need an inductive bias that reflects the process features of tableau growth (for example, salience dynamics and rule saturation) rather than surface lexical cues alone. Guidance must track the search state as a structured object, not just the surrounding sentence. Without that, learned scorers remain sensitive to lexical drift and to limited supervision.
 
 \paragraph{Overfitting signal.}
-Training logs for the CustomJava mimic show mean-squared error dropping to $7.7 \times 10^{-4}$ with trace-alignment accuracy at $1.0$ by epoch~2 on a dataset of roughly $185$ traces (\texttt{experiments/policies/CustomJava_logs/metrics.json}). The same run reports Spearman $\rho = 1.0$ and top-$5$ accuracy of $1.0$ on both train and validation splits (\texttt{experiments/policies/summary.json}). Such perfect scores on a small dataset, together with the generalisation failures noted above, indicate that the scorer has effectively memorised the traces rather than learned a robust ordering signal.
+Training logs for the CustomJava mimic show mean-squared error dropping to $7.7 \times 10^{-4}$ with trace-alignment accuracy at $1.0$ by epoch~2 on a dataset of roughly $185$ traces (\texttt{experiments/policies/CustomJava\_logs/metrics.json}). The same run reports Spearman $\rho = 1.0$ and top-$5$ accuracy of $1.0$ on both train and validation splits (\texttt{experiments/policies/summary.json}). Such perfect scores on a small dataset, together with the generalisation failures noted above, indicate that the scorer has effectively memorised the traces rather than learned a robust ordering signal.
 
 \subsection{Cross-Family Comparison}
 \label{sec:discussion-cross}
@@ -56,7 +56,7 @@ The most immediate implication is pragmatic: for the language fragment and ontol
 
 A second implication concerns hybridisation. Rather than replacing symbolic policies outright, data-driven guidance is better positioned as a constrained re-ranker \emph{after} symbolic pruning has reduced the candidate set. This respects runtime budgets, curtails variance introduced by external heuristics, and limits the exposure of learned scorers to distribution shift. Under this view, stronger salience-aware features and compact, structure-preserving encoders (that read the \emph{tableau state} rather than only text) are likely to be more effective than generic contextual embeddings alone.
 
-Finally, the results reaffirm the value of a clear separation of concerns in the runtime: \emph{(a)} a calculus that enforces sound local expansions; \emph{(b)} salience that steers instantiation; and \emph{(c)} a guidance interface that orders frontier states. Each layer can evolve independently without reinterpreting previous chapters’ formal commitments (cf.\ Chapter~\ref{chap:systemdesign}).
+Finally, the results reaffirm the value of a clear separation of concerns in the runtime: \emph{(a)} a calculus that enforces sound local expansions; \emph{(b)} salience that steers instantiation; and \emph{(c)} a guidance interface that orders frontier states. Each layer can evolve independently without reinterpreting previous chapters’ formal commitments (cf.\ Chapter~\ref{cp:systemdesign}).
 
 \subsection{Threats to Validity}
 \label{sec:discussion-threats}
