@@ -1,0 +1,1264 @@
+[
+    {
+        "domain": "business",
+        "synopsis": "Alice and Bob work at an office while a small cake celebration causes tension during a business negotiation.",
+        "sentences": [
+            {
+                "text": "alice and bob be_at office",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "bob": "human",
+                        "office": "location"
+                    },
+                    "roles": {
+                        "person1": "alice",
+                        "person2": "bob",
+                        "location": "office"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "he negotiate shipment at there",
+                "annotation": {
+                    "verb": "negotiate",
+                    "negated": false,
+                    "semantic_types": {
+                        "bob": "human",
+                        "shipment": "object",
+                        "office": "location"
+                    },
+                    "roles": {
+                        "negotiator": "he",
+                        "topic": "shipment",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "bob",
+                        "there": "office"
+                    }
+                }
+            },
+            {
+                "text": "emma bring cake at there",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "cake": "object",
+                        "office": "location"
+                    },
+                    "roles": {
+                        "courier": "emma",
+                        "object": "cake",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "office"
+                    }
+                }
+            },
+            {
+                "text": "john did not attend meeting at there",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": true,
+                    "semantic_types": {
+                        "john": "human",
+                        "meeting": "event",
+                        "office": "location"
+                    },
+                    "roles": {
+                        "attendee": "john",
+                        "event": "meeting",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "office"
+                    }
+                }
+            },
+            {
+                "text": "she celebrate it at lounge",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "cake": "object",
+                        "lounge": "location"
+                    },
+                    "roles": {
+                        "celebrant": "she",
+                        "object": "it",
+                        "location": "lounge"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "it": "cake"
+                    }
+                }
+            },
+            {
+                "text": "he was not at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": true,
+                    "semantic_types": {
+                        "bob": "human",
+                        "lounge": "location"
+                    },
+                    "roles": {
+                        "person": "he",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "bob",
+                        "there": "lounge"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "domain": "heist",
+        "synopsis": "David and Emma infiltrate a bank to steal a dossier after a disrupted birthday party.",
+        "sentences": [
+            {
+                "text": "david be_at bank",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "david": "human",
+                        "bank": "location"
+                    },
+                    "roles": {
+                        "subject": "david",
+                        "location": "bank"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "emma attend meeting at there",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "meeting": "event",
+                        "bank": "location"
+                    },
+                    "roles": {
+                        "attendee": "emma",
+                        "event": "meeting",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "bank"
+                    }
+                }
+            },
+            {
+                "text": "they did not celebrate birthday at there",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": true,
+                    "semantic_types": {
+                        "david": "human",
+                        "birthday": "event",
+                        "bank": "location"
+                    },
+                    "roles": {
+                        "celebrant": "they",
+                        "event": "birthday",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "they": "david",
+                        "there": "bank"
+                    }
+                }
+            },
+            {
+                "text": "she bring cake to vault",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "cake": "object",
+                        "vault": "location"
+                    },
+                    "roles": {
+                        "courier": "she",
+                        "object": "cake",
+                        "location": "vault"
+                    },
+                    "anaphora": {
+                        "she": "emma"
+                    }
+                }
+            },
+            {
+                "text": "he infiltrate there at there",
+                "annotation": {
+                    "verb": "infiltrate",
+                    "negated": false,
+                    "semantic_types": {
+                        "david": "human",
+                        "vault": "location",
+                        "bank": "location"
+                    },
+                    "roles": {
+                        "thief": "he",
+                        "target": "vault",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "david",
+                        "there": "bank"
+                    }
+                }
+            },
+            {
+                "text": "she did not be_at exit",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": true,
+                    "semantic_types": {
+                        "emma": "human",
+                        "exit": "location"
+                    },
+                    "roles": {
+                        "subject": "she",
+                        "location": "exit"
+                    },
+                    "anaphora": {
+                        "she": "emma"
+                    }
+                }
+            },
+            {
+                "text": "he steal dossier at there",
+                "annotation": {
+                    "verb": "steal",
+                    "negated": false,
+                    "semantic_types": {
+                        "david": "human",
+                        "dossier": "object",
+                        "vault": "location"
+                    },
+                    "roles": {
+                        "thief": "he",
+                        "object": "dossier",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "david",
+                        "there": "vault"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "domain": "investigation",
+        "synopsis": "Alice investigates a murder and evidence involving a cake solves the case.",
+        "sentences": [
+            {
+                "text": "alice investigate murder at library",
+                "annotation": {
+                    "verb": "investigate",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "murder": "event",
+                        "library": "location"
+                    },
+                    "roles": {
+                        "investigator": "alice",
+                        "event": "murder",
+                        "location": "library"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "bob be_at there now",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "bob": "human",
+                        "library": "location"
+                    },
+                    "roles": {
+                        "human": "bob",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "library"
+                    }
+                }
+            },
+            {
+                "text": "she bring cake at lobby",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "cake": "object",
+                        "lobby": "location"
+                    },
+                    "roles": {
+                        "courier": "she",
+                        "object": "cake",
+                        "location": "lobby"
+                    },
+                    "anaphora": {
+                        "she": "alice"
+                    }
+                }
+            },
+            {
+                "text": "he did not attend birthday at there",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": true,
+                    "semantic_types": {
+                        "bob": "human",
+                        "birthday": "event",
+                        "lobby": "location"
+                    },
+                    "roles": {
+                        "attendee": "he",
+                        "event": "birthday",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "bob",
+                        "there": "lobby"
+                    }
+                }
+            },
+            {
+                "text": "emma discover it at there",
+                "annotation": {
+                    "verb": "discover",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "cake": "object",
+                        "library": "location"
+                    },
+                    "roles": {
+                        "discoverer": "emma",
+                        "evidence": "it",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "it": "cake",
+                        "there": "library"
+                    }
+                }
+            },
+            {
+                "text": "she did not celebrate it at there",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": true,
+                    "semantic_types": {
+                        "emma": "human",
+                        "birthday": "event",
+                        "library": "location"
+                    },
+                    "roles": {
+                        "celebrant": "she",
+                        "event": "it",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "emma",
+                        "it": "birthday",
+                        "there": "library"
+                    }
+                }
+            },
+            {
+                "text": "she accuse he with it",
+                "annotation": {
+                    "verb": "accuse",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "bob": "human",
+                        "cake": "object"
+                    },
+                    "roles": {
+                        "accuser": "she",
+                        "suspect": "he",
+                        "evidence": "it"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "he": "bob",
+                        "it": "cake"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "domain": "emergency",
+        "synopsis": "John and Helen assist during a birthday event after a fire alarm interrupts the celebration.",
+        "sentences": [
+            {
+                "text": "john be_at hospital",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "hospital": "location"
+                    },
+                    "roles": {
+                        "person": "john",
+                        "location": "hospital"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "helen attend birthday at hall",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "helen": "human",
+                        "birthday": "event",
+                        "hall": "location"
+                    },
+                    "roles": {
+                        "attendee": "helen",
+                        "event": "birthday",
+                        "location": "hall"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "he bring cake to there",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "cake": "object",
+                        "hall": "location"
+                    },
+                    "roles": {
+                        "courier": "he",
+                        "object": "cake",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "john",
+                        "there": "hall"
+                    }
+                }
+            },
+            {
+                "text": "they celebrate it at there",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "birthday": "event",
+                        "hall": "location"
+                    },
+                    "roles": {
+                        "celebrant": "they",
+                        "event": "it",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "they": "john",
+                        "it": "birthday",
+                        "there": "hall"
+                    }
+                }
+            },
+            {
+                "text": "alarm sound at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "alarm": "object",
+                        "hall": "location"
+                    },
+                    "roles": {
+                        "object": "alarm",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "hall"
+                    }
+                }
+            },
+            {
+                "text": "she did not evacuate there",
+                "annotation": {
+                    "verb": "evacuate",
+                    "negated": true,
+                    "semantic_types": {
+                        "helen": "human",
+                        "hall": "location"
+                    },
+                    "roles": {
+                        "evacuee": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "helen",
+                        "there": "hall"
+                    }
+                }
+            },
+            {
+                "text": "he assist people at there",
+                "annotation": {
+                    "verb": "assist",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "people": "human",
+                        "hall": "location"
+                    },
+                    "roles": {
+                        "rescuer": "he",
+                        "target": "people",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "john",
+                        "there": "hall"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "domain": "celebration",
+        "synopsis": "Emma and David celebrate a birthday at the park, face confusion over a missing cake, and later confirm what happened.",
+        "sentences": [
+            {
+                "text": "emma be_at park",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "park": "location"
+                    },
+                    "roles": {
+                        "agent": "emma",
+                        "location": "park"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "david attend birthday at there",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "david": "human",
+                        "birthday": "event",
+                        "park": "location"
+                    },
+                    "roles": {
+                        "attendee": "david",
+                        "event": "birthday",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "park"
+                    }
+                }
+            },
+            {
+                "text": "she bring cake to there",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "cake": "object",
+                        "park": "location"
+                    },
+                    "roles": {
+                        "courier": "she",
+                        "object": "cake",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "emma",
+                        "there": "park"
+                    }
+                }
+            },
+            {
+                "text": "he did not attend meeting at hall",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": true,
+                    "semantic_types": {
+                        "david": "human",
+                        "meeting": "event",
+                        "hall": "location"
+                    },
+                    "roles": {
+                        "attendee": "he",
+                        "event": "meeting",
+                        "location": "hall"
+                    },
+                    "anaphora": {
+                        "he": "david"
+                    }
+                }
+            },
+            {
+                "text": "she discover missing it at there",
+                "annotation": {
+                    "verb": "discover",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "cake": "object",
+                        "park": "location"
+                    },
+                    "roles": {
+                        "discoverer": "she",
+                        "evidence": "it",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "emma",
+                        "it": "cake",
+                        "there": "park"
+                    }
+                }
+            },
+            {
+                "text": "they did not be_at office",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": true,
+                    "semantic_types": {
+                        "emma": "human",
+                        "office": "location"
+                    },
+                    "roles": {
+                        "agent": "they",
+                        "location": "office"
+                    },
+                    "anaphora": {
+                        "they": "emma"
+                    }
+                }
+            },
+            {
+                "text": "charlie investigate it at there",
+                "annotation": {
+                    "verb": "investigate",
+                    "negated": false,
+                    "semantic_types": {
+                        "charlie": "human",
+                        "cake": "object",
+                        "park": "location"
+                    },
+                    "roles": {
+                        "investigator": "charlie",
+                        "evidence": "it",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "it": "cake",
+                        "there": "park"
+                    }
+                }
+            },
+            {
+                "text": "she accuse he of theft",
+                "annotation": {
+                    "verb": "accuse",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "charlie": "human",
+                        "theft": "event"
+                    },
+                    "roles": {
+                        "accuser": "she",
+                        "suspect": "he",
+                        "evidence": "theft"
+                    },
+                    "anaphora": {
+                        "she": "emma",
+                        "he": "charlie"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "domain": "java_design",
+        "synopsis": "Java design variant 1: birthday celebration mystery with investigation twist.",
+        "sentences": [
+            {
+                "text": "a birthday was celebrated at home",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": false,
+                    "semantic_types": {
+                        "birthday": "occasion",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "occasion": "birthday",
+                        "location": "home"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "alice attended the it celebration",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "birthday": "occasion"
+                    },
+                    "roles": {
+                        "attendee": "alice",
+                        "occasion": "it"
+                    },
+                    "anaphora": {
+                        "it": "birthday"
+                    }
+                }
+            },
+            {
+                "text": "she was at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "attendee": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "there": "home"
+                    }
+                }
+            },
+            {
+                "text": "bob attended the it celebration",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "bob": "human",
+                        "birthday": "occasion"
+                    },
+                    "roles": {
+                        "attendee": "bob",
+                        "occasion": "it"
+                    },
+                    "anaphora": {
+                        "it": "birthday"
+                    }
+                }
+            },
+            {
+                "text": "charlie brought a cake to the birthday celebration",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "charlie": "human",
+                        "cake": "object",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "bringer": "charlie",
+                        "brought": "cake",
+                        "location": "home"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "john was at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "attendee": "john",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "home"
+                    }
+                }
+            },
+            {
+                "text": "someone murdered she at there",
+                "annotation": {
+                    "verb": "murder",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "alice": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "murderer": "someone",
+                        "victim": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "there": "home",
+                        "someone": "john"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "domain": "java_design",
+        "synopsis": "Java design variant 2: birthday celebration mystery with investigation twist.",
+        "sentences": [
+            {
+                "text": "a birthday was celebrated at home",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": false,
+                    "semantic_types": {
+                        "birthday": "occasion",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "occasion": "birthday",
+                        "location": "home"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "alice attended the it celebration",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "birthday": "occasion"
+                    },
+                    "roles": {
+                        "attendee": "alice",
+                        "occasion": "it"
+                    },
+                    "anaphora": {
+                        "it": "birthday"
+                    }
+                }
+            },
+            {
+                "text": "she was at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "attendee": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "there": "home"
+                    }
+                }
+            },
+            {
+                "text": "bob attended the it celebration",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "bob": "human",
+                        "birthday": "occasion"
+                    },
+                    "roles": {
+                        "attendee": "bob",
+                        "occasion": "it"
+                    },
+                    "anaphora": {
+                        "it": "birthday"
+                    }
+                }
+            },
+            {
+                "text": "charlie brought a cake to the birthday celebration",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "charlie": "human",
+                        "cake": "object",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "bringer": "charlie",
+                        "brought": "cake",
+                        "location": "home"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "john was at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "attendee": "john",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "home"
+                    }
+                }
+            },
+            {
+                "text": "someone murdered she at there",
+                "annotation": {
+                    "verb": "murder",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "alice": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "murderer": "someone",
+                        "victim": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "there": "home",
+                        "someone": "john"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "domain": "java_design",
+        "synopsis": "Java design variant 3: birthday celebration mystery with investigation twist.",
+        "sentences": [
+            {
+                "text": "a birthday was celebrated at home",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": false,
+                    "semantic_types": {
+                        "birthday": "occasion",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "occasion": "birthday",
+                        "location": "home"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "alice attended the it celebration",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "birthday": "occasion"
+                    },
+                    "roles": {
+                        "attendee": "alice",
+                        "occasion": "it"
+                    },
+                    "anaphora": {
+                        "it": "birthday"
+                    }
+                }
+            },
+            {
+                "text": "she was at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "attendee": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "there": "home"
+                    }
+                }
+            },
+            {
+                "text": "bob attended the it celebration",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "bob": "human",
+                        "birthday": "occasion"
+                    },
+                    "roles": {
+                        "attendee": "bob",
+                        "occasion": "it"
+                    },
+                    "anaphora": {
+                        "it": "birthday"
+                    }
+                }
+            },
+            {
+                "text": "charlie brought a cake to the birthday celebration",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "charlie": "human",
+                        "cake": "object",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "bringer": "charlie",
+                        "brought": "cake",
+                        "location": "home"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "john was at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "attendee": "john",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "home"
+                    }
+                }
+            },
+            {
+                "text": "someone murdered she at there",
+                "annotation": {
+                    "verb": "murder",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "alice": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "murderer": "someone",
+                        "victim": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "there": "home",
+                        "someone": "john"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "domain": "java_design",
+        "synopsis": "Java design variant 4: birthday celebration mystery with investigation twist.",
+        "sentences": [
+            {
+                "text": "a birthday was celebrated at home",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": false,
+                    "semantic_types": {
+                        "birthday": "occasion",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "occasion": "birthday",
+                        "location": "home"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "alice attended the it celebration",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "birthday": "occasion"
+                    },
+                    "roles": {
+                        "attendee": "alice",
+                        "occasion": "it"
+                    },
+                    "anaphora": {
+                        "it": "birthday"
+                    }
+                }
+            },
+            {
+                "text": "she was at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "attendee": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "there": "home"
+                    }
+                }
+            },
+            {
+                "text": "bob attended the it celebration",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": false,
+                    "semantic_types": {
+                        "bob": "human",
+                        "birthday": "occasion"
+                    },
+                    "roles": {
+                        "attendee": "bob",
+                        "occasion": "it"
+                    },
+                    "anaphora": {
+                        "it": "birthday"
+                    }
+                }
+            },
+            {
+                "text": "charlie brought a cake to the birthday celebration",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "charlie": "human",
+                        "cake": "object",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "bringer": "charlie",
+                        "brought": "cake",
+                        "location": "home"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "john was at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "attendee": "john",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "home"
+                    }
+                }
+            },
+            {
+                "text": "someone murdered she at there",
+                "annotation": {
+                    "verb": "murder",
+                    "negated": false,
+                    "semantic_types": {
+                        "john": "human",
+                        "alice": "human",
+                        "home": "location"
+                    },
+                    "roles": {
+                        "murderer": "someone",
+                        "victim": "she",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "alice",
+                        "there": "home",
+                        "someone": "john"
+                    }
+                }
+            }
+        ]
+    }
+]

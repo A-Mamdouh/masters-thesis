@@ -1,0 +1,39 @@
+Running annotated experiments for 9 stories with base policy 'CustomJava' (pool=1)
+Results for story: Alice and Bob work at an office while a small cake celebration causes tension during a business negotiation.
+  alice and bob be_at office
+  he negotiate shipment at there
+  emma bring cake at there
+  john did not attend meeting at there
+  she celebrate it at lounge
+HeuristicStatistics[policy=CustomJava, timeMs=281, exploredModels=47, modelFound=True]
+-------------------------------------------------------
+Results for story: David and Emma infiltrate a bank to steal a dossier after a disrupted birthday party.
+  david be_at bank
+  emma attend meeting at there
+  they did not celebrate birthday at there
+  she bring cake to vault
+  he infiltrate there at there
+HeuristicStatistics[policy=CustomJava, timeMs=138, exploredModels=23, modelFound=True]
+-------------------------------------------------------
+Results for story: Alice investigates a murder and evidence involving a cake solves the case.
+  alice investigate murder at library
+  bob be_at there now
+  she bring cake at lobby
+  he did not attend birthday at there
+  emma discover it at there
+HeuristicStatistics[policy=CustomJava, timeMs=121, exploredModels=21, modelFound=True]
+-------------------------------------------------------
+Results for story: John and Helen assist during a birthday event after a fire alarm interrupts the celebration.
+  john be_at hospital
+  helen attend birthday at hall
+  he bring cake to there
+  they celebrate it at there
+  alarm sound at there
+HeuristicStatistics[policy=CustomJava, timeMs=192, exploredModels=35, modelFound=True]
+-------------------------------------------------------
+Results for story: Emma and David celebrate a birthday at the park, face confusion over a missing cake, and later confirm what happened.
+  emma be_at park
+  david attend birthday at there
+  she bring cake to there
+  he did not attend meeting at hall
+  she discover missing it at there

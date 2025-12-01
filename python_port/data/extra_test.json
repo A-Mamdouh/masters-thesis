@@ -1,0 +1,193 @@
+
+[
+    {
+        "sentences": [
+            {
+                "text": "alice and bob be_at office",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": false,
+                    "semantic_types": {
+                        "alice": "human",
+                        "bob": "human",
+                        "office": "location"
+                    },
+                    "roles": {
+                        "person1": "alice",
+                        "person2": "bob",
+                        "location": "office"
+                    },
+                    "anaphora": {}
+                }
+            },
+            {
+                "text": "he negotiate shipment at there",
+                "annotation": {
+                    "verb": "negotiate",
+                    "negated": false,
+                    "semantic_types": {
+                        "shipment": "object",
+                        "there": "location",
+                        "he": "human"
+                    },
+                    "roles": {
+                        "negotiator": "he",
+                        "topic": "shipment",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "he",
+                        "there": "there"
+                    }
+                }
+            },
+            {
+                "text": "emma bring cake at there",
+                "annotation": {
+                    "verb": "bring",
+                    "negated": false,
+                    "semantic_types": {
+                        "emma": "human",
+                        "cake": "object",
+                        "there": "location"
+                    },
+                    "roles": {
+                        "courier": "emma",
+                        "object": "cake",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "there"
+                    }
+                }
+            },
+            {
+                "text": "john did not attend meeting at there",
+                "annotation": {
+                    "verb": "attend",
+                    "negated": true,
+                    "semantic_types": {
+                        "john": "human",
+                        "meeting": "event",
+                        "there": "location"
+                    },
+                    "roles": {
+                        "attendee": "john",
+                        "event": "meeting",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "there": "there"
+                    }
+                }
+            },
+            {
+                "text": "she celebrate it at lounge",
+                "annotation": {
+                    "verb": "celebrate",
+                    "negated": false,
+                    "semantic_types": {
+                        "she": "human",
+                        "it": "object",
+                        "lounge": "location"
+                    },
+                    "roles": {
+                        "celebrant": "she",
+                        "object": "it",
+                        "location": "lounge"
+                    },
+                    "anaphora": {
+                        "she": "she",
+                        "it": "it"
+                    }
+                }
+            },
+            {
+                "text": "he was not at there",
+                "annotation": {
+                    "verb": "be_at",
+                    "negated": true,
+                    "semantic_types": {
+                        "he": "human",
+                        "there": "location"
+                    },
+                    "roles": {
+                        "person": "he",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "he",
+                        "there": "there"
+                    }
+                }
+            },
+            {
+                "text": "she investigate he with dossier at there",
+                "annotation": {
+                    "verb": "investigate",
+                    "negated": false,
+                    "semantic_types": {
+                        "she": "human",
+                        "he": "human",
+                        "dossier": "object",
+                        "there": "location"
+                    },
+                    "roles": {
+                        "investigator": "she",
+                        "suspect": "he",
+                        "evidence": "dossier",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "she": "she",
+                        "he": "he",
+                        "there": "there"
+                    }
+                }
+            },
+            {
+                "text": "she accuse he with letter",
+                "annotation": {
+                    "verb": "accuse",
+                    "negated": false,
+                    "semantic_types": {
+                        "she": "human",
+                        "he": "human",
+                        "letter": "object"
+                    },
+                    "roles": {
+                        "accuser": "she",
+                        "suspect": "he",
+                        "evidence": "letter"
+                    },
+                    "anaphora": {
+                        "she": "she",
+                        "he": "he"
+                    }
+                }
+            },
+            {
+                "text": "he confirm it at there",
+                "annotation": {
+                    "verb": "confirm",
+                    "negated": false,
+                    "semantic_types": {
+                        "he": "human",
+                        "it": "object",
+                        "there": "location"
+                    },
+                    "roles": {
+                        "confirmer": "he",
+                        "fact": "it",
+                        "location": "there"
+                    },
+                    "anaphora": {
+                        "he": "he",
+                        "it": "it",
+                        "there": "there"
+                    }
+                }
+            }
+        ]
+    }
+]
