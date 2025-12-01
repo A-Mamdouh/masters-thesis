@@ -1,0 +1,79 @@
+\chapter{Introduction}
+
+% Start with the big picture before going into technicalities. Motiviation, why do we even care about what I'm doing
+
+\section{Overview}
+Natural-language understanding in short narratives depends on recovering a coherent discourse model, not merely analysing sentences in isolation. Human readers continuously integrate local linguistic cues with background knowledge to determine what entities are being referred to, what events are introduced, and how those events relate across the dialogue. When references are underspecified—most visibly in pronouns—correct interpretation often requires discourse-level reasoning and commonsense, rather than surface syntax alone \cite{ana-res, Kehler_2002,Grosz_1995}.
+
+This dependence on context is central in anaphora resolution, where selecting an antecedent amounts to choosing among competing global readings of the narrative. Standard statistical models have improved substantially, but they remain brittle on cases where the intended antecedent is determined by implicit world knowledge or situation structure. The Winograd Schema Challenge was introduced precisely to probe this limitation: it isolates short pronoun ambiguities that flip under minimal lexical edits and therefore cannot be solved robustly by correlation-based methods alone \cite{winograd}.
+
+The aim of this thesis is to study how structured semantic reasoning can be paired with explicit guidance to improve context-dependent interpretation while preserving interpretability. Concretely, we develop a guided model-generation system for short narratives and evaluate two paradigms for controlling its search over candidate interpretations. Design A follows a symbolic route in which an ontology and hand-written policies steer tableau expansion. Design B keeps the same calculus but projects the representation to event-level literals and introduces lightweight learned scoring functions. By comparing these guidance families under shared constraints, the study clarifies where symbolic control guarantees stability and where learned preferences can complement it without degrading robustness. 
+
+\section{Background and Context}
+To address context-dependent interpretation, recent research increasingly turns to hybrid reasoning systems that combine explicit semantic structure with flexible guidance signals.
+Neural encoders dominate many NLP tasks, but anaphora resolution still benefits from explicit structure and commonsense signals \cite{mitkov_2014,vaswani_2023}. Tableau calculi and neo-Davidsonian event semantics provide precise, inference-friendly representations \cite{smullyan_1995,parsons_1990}. Knowledge graphs add compact stores of factual relations \cite{tkgs}. These ingredients motivate hybrid systems that combine symbolic reasoning with learned guidance.
+
+\section{Problem Statement}
+Building reliable hybrids is difficult. Symbolic policies must be tuned to stay efficient, while neural scorers often lack the inductive bias needed for consistent semantics \cite{nlu_2020}. Knowledge graphs are frequently discussed but rarely integrated end-to-end. This thesis addresses these gaps by specifying a theroetical semantic model generation framework, a Java design that steers tableau expansion with a knowledge graph of situations, frames, roles, and semantic types, and by deriving a Python implementation that projects to event-level literals for data-driven guidance.
+
+\paragraph{Contributions.} This thesis contributes: (1) the system design as reference for implementations with tableau, guidance, general language constructs and search algorithm; (2) an implementation of a reproducible multithreaded tableau framework with salience-aware rule application and symbolic policy comparators; (3) the derivation of a Python implementation that collapses the ontology onto subject/object/verb/adjective predicates for neural cost functions and an external heuristic; and (4) an empirical comparison that documents stability gaps in learned guidance and outlines ablations and error patterns.
+
+\section{Research Objectives and Questions}
+The study evaluates guidance strategies for tableau-based semantic search while holding the logic and ontology fixed. It asks:
+
+\begin{itemize}
+    \item How well do breadth-first, depth-first, and salience-aware policies use the knowledge graph, and what happens under parallelism?
+    \item Can neural cost functions, the human-fine-tuned variant, and an external heuristic deliver guidance that remains steady on new stories and lexical edits?
+\end{itemize}
+
+\section{Research Hypothesis}
+We test the following hypothesis under a shared calculus and ontology:
+
+\begin{quote}
+\textbf{H1.} Symbolic guidance (in particular, the Custom policy) yields more stable branch orderings and lower runtime than learned or external guidance under equivalent constraints (single-thread score-at-leaf for Design~B; fixed timeouts/queue budgets for Design~A). Rule-level salience improves witness selection consistency across thread configurations.
+\end{quote}
+
+This hypothesis links the Results (Chapter~\ref{ch:results}) and Discussion (Chapter~\ref{ch:discussion-conclusion}) back to the problem statement by making stability and efficiency under fixed constraints the primary evaluation criterion.
+
+\section{Methodological Approach}
+
+The thesis follows a two-stage design. Chapter~\ref{chap:systemdesign} introduces the shared
+theoretical system architecture based on a sorted neo-Davidsonian logic and a tableau engine recursive structure with
+salience-driven reasoning~\cite{parsons_1990,tkgs}. A model generator operates on top of
+this tableau engine and accepts guidance policies for controlling model search.
+
+The subsequent chapters implement and evaluate two distinct designs built on this shared
+foundation. Design~A retains the full knowledge-graph ontology and logic signature of the
+reference design. It evaluates three symbolic guidance strategies (breadth-first,
+depth-first, and a salience-aware custom policy) within a multithreaded Java system.
+
+Design~B reuses the same tableau calculus but applies it to a projected representation
+that omits explicit situations and frames. This projection simplifies the logic signature
+to align with sentence structure, grouping literals by event into the predicates
+\textit{subject}, \textit{object}, and \textit{verb}, and introducing an ad-hoc
+\textit{adjective} predicate used only in the Python experiments. The projection enables
+neural cost functions trained on policy traces, a contrastive fine-tuning stage with human
+preferences, and an external heuristic that scores branches from textual descriptors
+\cite{winograd,bert_2019,few_shot_2020}.
+
+Both designs are evaluated on synthetic narratives using comparable metrics, including the
+number of explored models, runtime performance, and agreement with the custom policy.
+
+
+\section{Scope and Limitations}
+\textbf{In scope.} Static ontology, controlled event-semantics fragment (with adjectival modifiers in Design~B), short synthetic narratives, symbolic policies and learned guidance for branch prioritisation.\\
+\textbf{Out of scope.} Temporal knowledge graphs (conceptual context only), dynamic ontology updates, large open-domain corpora, and full transformer-based guidance.
+
+Both designs use curated fragments that align with tableau calculus. Design~A relies on the leaner Java grammar and the full ontology, while Design~B covers adjectival cues after projecting each situation/frame bundle into event descriptors, so the stories stay comparable even though the representations differ. The knowledge graph focuses on celebration and investigation scenes, which keeps variables controlled but limits coverage. The neural and external heuristic guidance stages start from policy traces, move to a small human-annotated set, and depend on contextual embeddings that add runtime cost \cite{bert_2019}.
+
+\section{Thesis Outline}
+The chapters are organized as follows:
+\begin{itemize}
+    \item \textbf{Chapter~2} reviews related work on formal logic, knowledge graphs, neural networks, and the Winograd Schema, establishing the background for the hybrid reasoning approach.
+    \item \textbf{Chapter~3} introduces the overall system design and architecture, describing the shared theoretical framework, logic signature, ontology, tableau calculus, and guidance paradigms that underpin all experiments.
+    \item \textbf{Chapter~4} presents the two designs and their implementations: Design~A (symbolic policies in Java) and Design~B (data-driven guidance in Python).
+    \item \textbf{Chapter~5} specifies datasets and evaluation protocols for both designs.
+    \item \textbf{Chapter~6} reports numerical results without interpretation.
+    \item \textbf{Chapter~7} provides discussion and the overall conclusion, including limitations and directions for future work.
+    \item \textbf{Appendix~\ref{app:reproducibility}} provides complete instructions to reproduce all experiments in Chapters~\ref{ch:experiments}--\ref{ch:results}, including environment setup, repository layout, build/run commands, neural training, and seed/log management.
+\end{itemize}

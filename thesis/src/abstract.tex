@@ -1,0 +1,11 @@
+% \begin{abstract}
+This thesis develops a guided search system for interpreting short narratives and evaluates two ways to control that search. The first design (Java) relies on symbolic guidance: an ontology and hand-written policies decide which partial interpretations to expand. The second design (Python) keeps the same calculus but adds data-driven guidance through simple neural cost functions. Guided model generation is useful because it keeps inference interpretable and auditable: each decision can be traced to a policy or a score.
+
+The study tests whether learned guidance can replace or complement symbolic control. Both designs run on the same story sets. We report wall-clock time, explored models, and success rate for every run, plus branch-ordering agreement (Spearman $\rho$) for the Python scorer and its training losses/accuracies. Symbolic policies were stable: the custom policy remained fast as thread counts increased, while plain DFS and BFS often explored more states than necessary. The learned guidance fit the training traces almost perfectly but was brittle on new material; the external heuristic was sensitive to prompts and seeds.
+
+Taken together, the results support a hybrid strategy. Keep the symbolic scaffold to ensure basic correctness, and use learned scores as lightweight tie-breakers rather than as the main controller. The contributions are:
+(1) A layered system design separating tableau calculus, model generation, and model guidance;
+(2) a reproducible, multi-threaded symbolic system with policy comparators;
+(3) a Python port that exposes the same interface to learned scorers; and
+(4) an empirical comparison that documents symbolic robustness, learned-policy instability, and their practical consequences. Reproducibility instructions appear in the appendix.
+% \end{abstract}

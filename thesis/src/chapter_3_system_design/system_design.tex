@@ -1,0 +1,391 @@
+\chapter{System Design}
+\label{chap:systemdesign}
+
+\section{Design Motivation and Objectives}
+\label{sec:design-motivation}
+
+This chapter studies how tableau-style semantic search handles short narratives with ambiguous references. The reference overall system design defines the base logic, the knowledge graph ontology, the tableau engine, and the model generation engine. This system design cleanly separates formal representation expressivity from the overall system, allowing changes to be applied easily to expand on the system in future work.
+
+\subsection*{Motivating example.}
+\addcontentsline{toc}{subsection}{Motivating Example}
+
+To illustrate the kind of discourse ambiguity we target, consider the short dialogue:
+
+\begin{quote}
+\emph{``Sara saw the dog. She bit her.''}
+\end{quote}
+
+The difficulty is not in parsing either sentence in isolation, but in deciding how the pronouns in the second sentence attach to the entities introduced in the first. The dialogue admits (at least) two plausible interpretations:
+
+\begin{enumerate}
+    \item \textbf{Dog-as-biter:} Sara saw the dog, and then the dog bit Sara.  
+    \item \textbf{Sara-as-biter:} Sara saw the dog, and then Sara bit the dog.
+\end{enumerate}
+
+Crucially, nothing in the surface form of the second sentence forces one reading over the other. Human readers rely on background knowledge about typical situations to recover the intended antecedents. For instance, that dogs are more likely to bite humans than the reverse. The task for an interpretation system is therefore to represent both readings explicitly and to prefer the one that is most coherent with commonsense and the discourse context.
+
+In this thesis, we treat such dialogues as underspecified descriptions of events. Our system generates candidate semantic models corresponding to different reference resolutions, and guidance mechanisms (symbolic policies in Design~A or learned scores in Design~B) are used to rank these candidates. The remainder of this chapter makes this process precise.
+
+\section{Common Theoretical Framework}
+\label{sec:common-framework}
+
+\subsection{Logic Signature}
+\label{subsec:logic-signature}
+
+The system operates over a sorted first-order event logic with the structure of frame semantics. The signature comprises the sorts
+\begin{itemize}
+    \item $situation$ and $situation\_type$;
+    \item $frame$ and $frame\_type$;
+    \item $role\_type$;
+    \item $sem\_type$; and
+    \item $actor$
+\end{itemize}
+    Terms are generated from the grammar
+\begin{itemize}
+    \begin{minipage}{0.8\linewidth}
+        \item $U$ for unique constants,
+        \item $C$ for non-unique constants, and
+        \item $V$ for variables,
+    \end{minipage}
+\end{itemize}
+where each term may take any sort. Unique constants satisfy a uniqueness axiom that prevents aliasing, whereas non-unique constants behave as existentially bound variables that can later unify with other terms. Formulas are obtained from the constructors
+\begin{itemize}
+    \begin{minipage}{0.4\linewidth}
+        \item $\top$,
+        \item $\bot$,
+        \item $\neg \phi$,
+        \item $\phi \wedge \psi$, and
+        \item $\exists_e : \phi[e] . \psi[e]$,
+    \end{minipage}
+    \begin{minipage}{0.4\linewidth}
+        \item $situation(s, S)$,
+        \item $frame(s, f, F)$,
+        \item $role(f, A, R)$, or $role(f, a, R)$, and
+        \item $semType(A, T)$,
+    \end{minipage}
+\end{itemize}
+with variables $s$, $f$, $r$ taken from the $situation$, $frame$, and $actor$ sorts respectively, and constants $S$, $F$, $A$, $R$, and $T$ taken from the $situation\_type$, $frame\_type$, $actor$, $role\_type$, and $sem\_type$ sorts respectively.
+The modified existential quantifier allows a precondition formula $\phi$ for the constant or witness used. It roughly translates to ``There exists an individual with the property $\phi$, where $\psi$.''. This enables picking terms that already satisfy a precondition in the branch before adding more information about them in the tableau. The logic allows existential conditional instantiation and equality reasoning, providing sufficient structure for modelling event semantics, frame roles, and salience-sensitive reasoning.
+
+\subsection{Natural Language Fragment}
+The framework restricts utterances to sentences with a single verb, which is can be used to match a frame, multiple actors, such as subject, object, and prepositions which are introduced as roles.
+Additional extensions to the fragment such as adjectives or adverbs remain outside the ontology and are left as future work. 
+Table~\ref{tab:translation-example} demonstrates the deterministic mapping from English sentences to formulas.
+
+\begin{table}[htbp]
+\centering
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.34\textwidth} >{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Sentence} & \textbf{Logical Representation} \\
+\midrule
+
+Alice attended the birthday celebration.
+&
+\begin{minipage}[t]{\linewidth}\footnotesize
+\texttt{semType(birthday, stype\_occasion)}\\
+\texttt{semType(alice, stype\_human)}\\[0.25em]
+\(
+\exists s\,\exists f\,\exists l\,\bigl(
+   situation(situation\_celebration, s)\ \wedge\
+   frame(s, frame\_attend, f)\ \wedge\
+   role(f, role\_attendee, alice)\ \wedge\
+   role(f, role\_occasion, birthday)\ \wedge\
+   semType(l, stype\_location)\ \wedge\
+   role(f, role\_location, l)
+\bigr)
+\)
+\end{minipage}
+\\
+\addlinespace[0.4em]
+\midrule
+
+Alice was at home.
+&
+\begin{minipage}[t]{\linewidth}\footnotesize
+\(
+\exists s\,\exists f\,\bigl(
+   situation(situation\_celebration, s)\ \wedge\
+   frame(s, frame\_be\_at, f)\ \wedge\
+   role(f, role\_location, home)\ \wedge\
+   role(f, role\_attendee, alice)
+\bigr)
+\)\\[0.25em]
+\texttt{semType(alice, stype\_human)}\\
+\texttt{semType(home, stype\_location)}\\
+\end{minipage}
+\\
+\addlinespace[0.4em]
+\midrule
+
+Bob attended the birthday celebration.
+&
+\begin{minipage}[t]{\linewidth}\footnotesize
+\texttt{semType(birthday, stype\_occasion)}\\
+\texttt{semType(bob, stype\_human)}\\[0.25em]
+\(
+\exists s\,\exists f\,\exists l\,\bigl(
+   situation(situation\_celebration, s)\ \wedge\
+   frame(s, frame\_attend, f)\ \wedge\
+   role(f, role\_occasion, birthday)\ \wedge\
+   semType(l, stype\_location)\ \wedge\
+   role(f, role\_location, l)\ \wedge\
+   role(f, role\_attendee, bob)
+\bigr)
+\)
+\end{minipage}
+\\
+\addlinespace[0.4em]
+\midrule
+
+Charlie brought a cake to the birthday celebration.
+&
+\begin{minipage}[t]{\linewidth}\footnotesize
+\texttt{semType(birthday, stype\_occasion)}\\
+\texttt{semType(charlie, stype\_human)}\\
+\texttt{semType(cake, stype\_object)}\\[0.25em]
+\(
+\exists s\,\exists f\,\exists l\, . \bigl(
+   situation(situation\_celebration, s)\ \wedge\
+   frame(s, frame\_bring, f)\ \wedge\
+   role(f, role\_occasion, birthday)\ \wedge\
+   role(f, role\_brought, cake)\ \wedge\
+   role(f, role\_location, l)\ \wedge\
+   role(f, role\_bringer, charlie)
+\bigr)
+\)
+\end{minipage}
+\\
+\bottomrule
+\end{tabularx}
+\caption{Translation from English to logic.}
+\label{tab:translation-example}
+\end{table}
+
+
+\subsection{Ontology of Situations, Frames, and Roles}
+\label{ch:ontology}
+The framework grounds the logic in a typed ontology that captures prototypical situations and their roles. Each \emph{situation} such as \emph{celebration} or \emph{murder} lists one or more \emph{frames}. Frames use the predicate $\mathit{frame}(s,f,F)$ with situation $s$, frame $f$, and frame type $F$. Roles use from predicates $\mathit{role}(f,A,R)$, where $f$ relates the role to the specific frame invokation, $A$ supplies the individual acting the role, and $R$ represents the type of the role.
+In addition, situations can have axioms that can enforce ontological well-formedness, such as: no frame my assign the same role twice, and actors must be located in the same situation-specific context. This ontology therefore constrains tableau expansion by restricting which formulas can be added for each sentence and by pruning branches that violate narrative coherence.
+
+
+\subsection{Tableau Calculus and Salience}
+\label{subsec:tableau-salience}
+
+Both designs rely on the same tableau calculus summarised in Table~\ref{tab:inference-rules}. Rules break down conjunctions, instantiate quantifiers, and detect contradictions. Search nodes hold open branches paired with salience-weighted discourse entities. Salience is applied strictly at the rule level: every time new individuals appear, they receive full salience, while existing individuals are decayed by a constant factor. Salience therefore prioritises which constants are used when instantiating existential rules, but it does not dictate the order in which branches are dequeued; that distinction is reserved for policies and cost functions introduced later.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabularx}{\textwidth}{|>{\centering\arraybackslash}m{7cm}|>{\centering\arraybackslash}m{2.4cm}|X|}
+        \hline
+        \textbf{Rule} & \textbf{Name} & \textbf{Description}\\
+        \hline\hline
+        $\infer{\bot}{\phi, \neg \phi}$ & $\mathcal{\bot}(Contra)$ & Contradiction is unsatisfiable\\
+        \hline
+        $\infer{\bot}{\neg T}$ & $\mathcal{\bot}(\neg T)$ & ``Not true'' is unsatisfiable\\
+        \hline
+        $\infer{\bot}{F}$ & $\mathcal{\bot}(F)$ & False closes the branch\\
+        \hline
+        $\infer{\phi, \psi}{\phi \wedge \psi}$ & $\wedge$ & Break down conjunctions\\
+        \hline
+        $\infer{\phi}{\neg \neg \phi}$ & $Dneg$ & Remove double negation\\
+        \hline
+        $\infer{\neg\phi[e_1], \ldots, \neg\phi[e_n]}{
+        e_1, \ldots, e_n \in \mathcal{H} \\
+        \neg\exists_e.\phi[e]
+        }$ & $\forall$ & Instantiate universal claims using known individuals\\
+        \hline
+        $\infer{\phi \mid \psi}{\neg(\neg \phi \wedge \neg \psi)}$ & $\vee$ & Branch on disjunctions\\
+        \hline
+        $\infer{\phi[e_1] \mid \ldots \mid \phi[e_n] \mid \phi[e_{\text{new}}]}{
+            e_1, \ldots, e_n \in \mathcal{H}\\
+            \exists_e.\phi[e],\; e_{\text{new}} \not\in \mathcal{M}
+        }$ & $\exists$ & Instantiate existential quantifiers\\
+        \hline
+    \end{tabularx}
+    \caption{Tableau inference rules shared across designs.}
+    \label{tab:inference-rules}
+\end{table}
+
+% \subsection{Example}
+% \label{subsec:example}
+% Throughout the chapter the dialogue ``Sara saw the dog. She bit her.'' serves as the canonical example. The system grounds this story by instantiating situations, frames, and roles inside the ontology. Two situations are activated: an \textbf{observation} situation that introduces the \emph{seeing} frame, and an \textbf{animal-interaction} situation that introduces the \emph{biting} frame. The roles are populated directly from the sentences, as summarised in Table~\ref{tab:running-frames}.
+
+% \begin{table}[htbp]
+%     \centering
+%     \begin{tabular}{|l|l|l|}
+%         \hline
+%         \textbf{Situation} & \textbf{Frame} & \textbf{Roles}\\
+%         \hline
+%         Observation & Seeing & Seer, Observed\\
+%         Animal-interaction & Biting & Biter, Bitten\\
+%         \hline
+%     \end{tabular}
+%     \caption{Situations and frames instantiated by Design~A for the running example.}
+%     \label{tab:running-frames}
+% \end{table}
+
+% The ontology facts injected by Design~A are expressed with existential quantifiers because frame identifiers and some individuals are created on demand:
+% \begin{align*}
+% &\exists s, f.\; \mathit{situation}(s, observation) \wedge \mathit{frame}(s, \text{seeing}, f) \wedge \mathit{role}(f, \text{seer}, \text{sara}) \wedge \mathit{role}(f \text{observed}, \text{the\_dog}),\\
+% &\exists s, f, b, v.\; \mathit{situation}(s, animal\_interaction) \wedge \mathit{frame}(s, \text{biting}, f) \wedge \mathit{role}(f, \text{biter}, b) \wedge \mathit{role}(f, \text{bitten}, v),\\
+% &\mathit{semType}(sara, human),\\
+% &\mathit{semType}(sara, dog),\\
+% \end{align*}
+% These predicates anchor the discourse entities to the knowledge graph and supply the constraints that guide our policy.
+
+
+\section{Abstract System Architecture}
+
+The system follows a modular pipeline that transforms controlled natural-language
+narratives into formal semantic interpretations. Each module operates on a well-defined
+representation and passes structured data to the next stage, ensuring reproducibility and
+traceability of the reasoning process. Figure~\ref{fig:overall-architecture} illustrates
+the overall workflow from parsing to guided model generation.
+
+\paragraph{Parsing and Logical Translation.}
+The input to the system is a list of parsed sentences, each represented as a structured
+record containing a verb, a list of semantic-type-annotated actors, and a Boolean flag
+indicating whether the sentence is negated. These sentence objects serve as the intermediate
+form between natural language and the logical layer. Rather than translating directly into
+formulas at this stage, the parser preserves surface information for reporting and passes
+the structured entries to the model generator for integration into the ongoing dialogue
+context.
+
+\paragraph{Ontology Layer.}
+When a new sentence is presented to the model generator, its verb and annotated actors
+are matched against the ontology of situations, frames, and roles. The ontology provides
+typed templates describing which roles are expected for each frame and how they relate to
+semantic types such as \textit{human}, \textit{object}, \textit{location}, or \textit{occasion}.
+A successful match instantiates the corresponding frame, links its roles to the sentence's
+actors, and activates the situation associated with that frame. These instantiated predicates
+become part of the logical workspace handled by the tableau engine, ensuring that every
+linguistic input is grounded in a coherent semantic structure before reasoning proceeds.
+
+\paragraph{Tableau Engine.}
+The tableau engine is implemented as a recursive data structure that maintains a
+(possibly partial) model under construction. Each tableau instance contains a branch of
+logical formulas representing one candidate interpretation of the discourse. Applying an
+inference rule extends this structure: some rules expand the current model directly,
+modifying the existing branch, while others introduce disjunctions that generate branching
+extensions. In the latter case, new leaves are created, each corresponding to a distinct
+continuation of the interpretation. These leaves form the boundary between completed and
+open branches and serve as nodes for the model generator.
+
+\paragraph{Model Generator.}
+The model generator orchestrates the search over tableau leaves, treating each open branch
+as an expandable node. It maintains the fringe of the search and controls how new tableau
+instances are explored. Expansion follows a modular interface that accepts either a
+comparison function or a cost function to prioritise nodes. This abstraction allows the
+system to instantiate different guidance mechanisms while preserving the same reasoning
+core. In practice, the generator can implement a priority queue ordered by the comparator
+or a cost-based ranking strategy, both of which integrate seamlessly with the concurrent
+expansion loop. This design isolates inference from search control and enables flexible,
+policy-driven model generation.
+
+\paragraph{Guidance Interface.}
+The guidance interface defines the contract between the model generator and the policy or
+scoring component that orders the search frontier. It abstracts the notion of “guidance” as
+a pluggable evaluation module that assigns a priority to each open tableau node. The
+interface can be realised either as a comparison function, supporting a priority-queue
+ordering, or as a cost function that maps nodes to scalar scores. It receives metadata such
+as branch depth, salience statistics, and the number of accumulated formulas, and returns
+a priority value used by the model generator to decide which branch to expand next. By
+isolating this control layer from the inference logic, the system remains agnostic to the
+specific guidance mechanism and can accommodate symbolic heuristics or learned scoring
+functions without altering the underlying tableau or search structures.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=7mm and 12mm,
+  box/.style={draw, rounded corners, align=center, font=\footnotesize,
+              minimum height=7mm, inner sep=2pt, fill=gray!5, text width=38mm},
+  >={Stealth[length=1.8mm]},
+  every edge/.style={draw, -{Stealth}, thin}
+]
+
+% ===== Main vertical flow =====
+\node[box] (input) {Parsed Sentence Records\\(verb, typed actors, negation)};
+\node[box, below=of input] (gen) {Model Generator\\(dialog integration \& search fringe)};
+\node[box, below=of gen] (match) {Ontology Match \& Activation\\(frames, roles $\rightarrow$ situation)};
+\node[box, below=of match] (work) {Logical Workspace\\(instantiated frames/roles, clauses)};
+\node[box, below=of work] (tab) {Tableau Engine\\(recursive structure; inference \& branching)};
+\node[box, below=of tab] (out) {Candidate Models / Interpretations};
+
+% ===== Side modules =====
+\node[box, left=16mm of gen] (guide) {Guidance Interface\\(comparator or cost $\rightarrow$ priority)};
+\node[box, right=16mm of tab] (sal) {Salience Metadata\\(boost new entities; decay existing)};
+\node[box, right=16mm of out] (eval) {Evaluation Metrics\\(runtime, explored models, agreement)};
+
+% ===== Edges: vertical =====
+\path (input) edge (gen)
+      (gen) edge (match)
+      (match) edge (work)
+      (work) edge (tab)
+      (tab) edge (out);
+
+% ===== Edges: side modules =====
+\path (guide) edge (gen);
+\path (sal) edge (tab);
+\path (out) edge (eval);
+
+\end{tikzpicture}
+
+\caption{System overview. Parsed sentence records are integrated into the dialogue by the
+model generator, which invokes ontology matching to instantiate frames and activate the situation.
+The tableau is a recursive structure whose leaves (open branches) feed the generator's search fringe; a pluggable guidance interface prioritises which leaf to expand next.}
+\label{fig:overall-architecture}
+\end{figure}
+
+
+\section{Guidance Paradigms}
+\label{sec:guidance-paradigms}
+Guidance refers to the control strategy that determines how the model generator explores
+the fringe of the search space to construct a consistent model. It defines the order in
+which open tableau nodes are expanded, independent of the logical calculus itself. The
+guidance mechanism can follow a simple comparison policy, such as depth-first or
+breadth-first traversal, or a more elaborate priority scheme that considers properties of
+the candidate model, including its size, depth, or the current salience of discourse
+entities. By steering exploration through these structural cues, guidance balances
+completeness and efficiency while keeping the reasoning process reproducible.
+
+At the implementation level, guidance is realised through a modular interface that
+receives the tableau node, as well as metadata about the node, and returns an ordering signal to the model
+generator. This interface can take the form of a comparison function used by a priority
+queue, or a cost function that assigns scalar scores to nodes, allowing statistical or
+neural models to influence search without altering the underlying tableau or ontology.
+Each time a new node is generated, the model generator inserts it into the ordered fringe
+according to the guidance output. This design isolates search control from inference,
+ensuring that both symbolic and data-driven strategies can operate transparently within
+the same reasoning framework.
+
+\section{Summary of Design Principles}
+
+The overall architecture rests on a small set of principles that ensure modularity,
+reproducibility, and extensibility. Each component of the system (logic, ontology, tableau,
+and guidance) operates through a clearly defined interface so that extensions or
+replacements can be introduced without altering the underlying reasoning model. The
+result is a unified framework capable of hosting both symbolic and data-driven control
+strategies within the same tableau infrastructure.
+
+\begin{itemize}
+    \item \textbf{Separation of concerns.} Logical inference, ontological grounding, and
+    search control are implemented as independent modules. This separation preserves
+    the clarity of each component and prevents side effects between reasoning and
+    guidance.
+    \item \textbf{Reproducibility.} A fixed set of tableau rules and deterministic data
+    structures ensures that model generation and evaluation remain stable across runs.
+    \item \textbf{Extensibility.} The abstract guidance interface supports multiple
+    control paradigms, from rule-based comparators to cost-based scoring, without
+    modifying the tableau or ontology code paths.
+    \item \textbf{Interpretability.} Salience-aware reasoning provides an explicit and
+    traceable account of how discourse entities influence search decisions, making the
+    inference process transparent.
+\end{itemize}
+
+Together, these principles define a reproducible and interpretable reasoning framework
+that separates semantic representation from search control. The following chapters build
+on this foundation by instantiating two implementations that adopt different guidance
+strategies while preserving the same underlying design.
