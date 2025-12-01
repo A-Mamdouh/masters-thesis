@@ -1,0 +1,417 @@
+\chapter{Implementations}
+\label{ch:implementations}
+\section{Shared Runtime Architecture}
+\label{sec:shared-arch}
+
+This section summarizes the runtime shared by both designs and how parsing, ontology grounding, tableau reasoning with salience, and a pluggable guidance interface form a single pipeline. The aim is to keep inference (the tableau calculus and ontology grounding) decoupled from search control (policies or cost functions), so that symbolic comparators (Design~A) and learned scorers (Design~B) can be swapped without touching the reasoning core. The terminology (\emph{model generator}, \emph{guidance interface}, \emph{salience}) follows Chapter~3 (cf.\ \S\ref{sec:guidance-paradigms} and \S\ref{subsec:tableau-salience}).
+
+\paragraph{Overview and dataflow.}
+Inputs are parsed sentence records that retain surface verb, typed actors, and a negation flag. These records are not fully compiled to logic at parse time; instead, the model generator integrates each record into the discourse context by matching the ontology and instantiating frames/roles before tableau expansion proceeds. This preserves a clean interface between linguistic preprocessing and logical reasoning.
+
+\begin{itemize}
+  \item \textbf{Parsing $\rightarrow$ ontology activation.} For each sentence, the ontology module matches situation/frame templates and fills role slots for actors with semantic types (e.g., \texttt{human}, \texttt{object}, \texttt{location}, \texttt{occasion}); unknown referents are introduced existentially for later unification. The instantiated predicates are deposited into the logical workspace.
+  \item \textbf{Tableau + salience (rule-level).} The tableau engine expands a branch to saturation with non-branching rules and creates successors on disjunctive steps; salience metadata is updated after rule applications by boosting newly introduced individuals and decaying existing ones. This is rule-level salience applied during rule expansion; it biases \emph{witness selection} for existential instantiation but does not determine frontier ordering.
+  \item \textbf{Guidance interface.} The model generator maintains an ordered fringe of open branches. Ordering is delegated to a \emph{guidance interface} that can be realized as (i) a comparator (symbolic policies) or (ii) a scalar cost function (learned guidance), enabling both designs to use the same expansion loop.
+\end{itemize}
+
+\paragraph{Tableau calculus and salience scope.}
+Both designs share the same calculus (conjunction/decomposition, double-negation elimination, instantiation of $\forall/\exists$, and disjunction branching). Salience is confined to rule application: every introduction of new individuals receives full salience while previously active discourse entities decay by a fixed factor. This mechanism biases which constants are chosen as witnesses when instantiating existential claims but remains orthogonal to the ordering of frontier nodes. This separation is emphasized because later sections vary only the ordering signal while holding the calculus and salience policy fixed.
+
+\paragraph{Model generator and queues.}
+The model generator treats each \emph{open leaf} as a candidate model and orchestrates its expansion under a priority discipline. In practice, it uses a priority queue keyed by the guidance interface:
+\begin{enumerate}
+  \item \textbf{Symbolic policies (Design~A).} Policies implement a comparator and thus directly define the queue ordering (e.g., BFS, DFS, Custom comparator). Details of the queue implementation, workers, and tunables appear in \S\ref{sec:java-policy}.
+  \item \textbf{Learned/external scoring (Design~B).} The same interface accepts scalar scores from neural cost functions or an external heuristic. Because encoders consume grouped event literals, Design~B computes scores only when a branch has reached an \emph{open leaf} with the necessary bundle (subject/verb/object and, in this design only, adjective). This constraint leaves the calculus unchanged but postpones scoring relative to Design~A.
+\end{enumerate}
+
+\paragraph{Representations by design (storage view).}
+Design~A stores ontology-grounded structures: situations, frames, roles, and semantic types, mirroring the event-semantics/frames ontology and enabling constraint checks (e.g., unique role assignments, domain restrictions). Design~B projects the same discourse state to event-level literals grouped per event: \texttt{subject(e,\,\_)}, \texttt{verb(e,\,\_)}, \texttt{object(e,\,\_)}, and an ad-hoc \texttt{adjective} predicate used only here; explicit frame identifiers are not retained in stored state. The projection is purely representational and leaves rule application unchanged.
+
+\paragraph{Decoupling inference from guidance.}
+The shared runtime enforces the boundary between inference and guidance:
+\begin{compactitem}
+  \item \emph{Inference path}: ontology grounding $\rightarrow$ tableau rule application $\rightarrow$ salience update (rule-level).
+  \item \emph{Guidance path}: metadata extraction (depth, new-individual count, accumulated formulas, salience summaries as needed) $\rightarrow$ comparator/score $\rightarrow$ queue priority.
+\end{compactitem}
+This design enables interchangeable control strategies and supports reproducible comparisons since the reasoning substrate is identical across policies/scorers.
+
+\paragraph{Concurrency and scope of details.}
+Parallel expansion and queue-drain/timeout controls belong to the Java implementation and are described in \S\ref{sec:java-policy}. The present section only fixes the \emph{locus} of guidance (frontier ordering) and the \emph{scope} of salience (rule-level witness selection) so that later sections can vary policy/scorer and thread model independently.
+
+\paragraph{Design~B scoring constraint (operational note).}
+Because Design~B’s cost functions and external heuristic operate on bundled event literals, branches are scored when they are fully available as open leaves. Until then, expansion proceeds deterministically under the calculus and salience. This “score-at-leaf” constraint is operational only and does not alter the calculus itself.
+
+
+\begin{figure}[t]
+%   \makebox[\linewidth][l]{\hspace*{-10mm}% push whole figure a bit left
+  \begin{tikzpicture}[
+      every node/.style={font=\scriptsize},
+      node distance=6mm and 8mm,
+      >=Latex,
+      rounded corners=2pt,
+      % widths: keep sum + gap < \linewidth
+      main/.style={draw, fill=gray!6, very thick, align=left, inner sep=5pt, text width=0.55\linewidth},
+      smallmain/.style={draw, fill=gray!6, thick, align=left, inner sep=4pt, text width=0.55\linewidth},
+      pq/.style={draw, fill=gray!12, very thick, align=left, inner sep=5pt, text width=0.55\linewidth},
+      sidenote/.style={draw, thick, dotted, align=left, inner sep=4pt, text width=0.35\linewidth, dash pattern=on 1pt off 1.2pt},
+      legendbox/.style={draw, align=left, xshift=30mm, inner sep=5pt, fill=white}
+    ]
+
+    % Left (narrow) main stack
+    \node (parse) [main]
+      {\textbf{Parsed sentence records}\\
+       \emph{surface verb, typed actors, negation flag}};
+
+    \node (onto) [main, below=of parse]
+      {\textbf{Ontology activation (situations/frames/roles)}\\
+       instantiate frames; fill role slots with semantic types; introduce unknowns existentially};
+
+    \node (tab) [main, below=of onto]
+      {\textbf{Tableau engine (shared calculus)}\\
+       decompose $\land$; eliminate $\neg\neg$; instantiate $\forall/\exists$; branch on $\lor$};
+
+    \node (mg) [main, below=of tab]
+      {\textbf{Model generator (frontier of open branches)}\\
+       maintains candidate leaves; extracts metadata (depth, \#new individuals, formula count, salience summaries)};
+
+    \node (guide) [main, below=of mg]
+      {\textbf{Guidance interface (pluggable)}\\
+       \textbf{Design A (symbolic policy)}: comparator defines ordering (BFS / DFS / Custom).\\
+       \textbf{Design B (learned/external)}: scalar cost from encoder or heuristic.};
+
+    \node (pqnode) [pq, below=of guide]
+      {\textbf{Priority queue over open branches}};
+
+    \node (expand) [smallmain, below=of pqnode]
+      {\textbf{Select next branch and expand}\\
+       apply calculus rules to saturation (non-branching); enqueue successors on branching};
+
+    \node (outcomes) [smallmain, below=of expand]
+      {\textbf{Outcomes}\\
+       \emph{closed (inconsistent)} \;|\; \emph{open (candidate model)} \;|\; \emph{branches (frontier)}};
+
+    % Right (dotted) side notes, 3mm gap
+    \node (sal) [sidenote, right=3mm of tab.east, anchor=west]
+      {\textbf{Rule-level salience}\\
+       boost new individuals; decay prior entities; influences witness selection only};
+
+    \node (leafnote) [sidenote, right=3mm of outcomes.east, anchor=west]
+      {\textbf{Design B: score at open leaf}\\
+       compute cost only when grouped event literals are available};
+
+    % Flow arrows
+    \draw[->, very thick] (parse) -- (onto);
+    \draw[->, very thick] (onto) -- (tab);
+    \draw[->, very thick] (tab) -- (mg);
+    \draw[->, very thick] (mg) -- (guide);
+    \draw[->, very thick] (guide) -- (pqnode);
+    \draw[->, very thick] (pqnode) -- (expand);
+    \draw[->, very thick] (expand) -- (outcomes);
+
+    % Dotted connectors
+    \draw[dotted] (tab.east) -- (sal.west);
+    \draw[dotted] (outcomes.east) -- (leafnote.west);
+
+    % Legend
+    \node (legend) [legendbox, below=6mm of outcomes] {
+      \begin{tabular}{@{}ll@{}}
+        \tikz{\draw[line width=0.6pt] (0,0)--(10mm,0);} & inference path (calculus, ontology, rule-level salience) \\
+        \tikz{\draw[dashed,line width=0.6pt] (0,0)--(10mm,0);} & guidance path (ordering via comparator or cost)
+      \end{tabular}
+    };
+
+  \end{tikzpicture}
+%   }
+  \caption{Shared runtime architecture (top to bottom). Inference path: parsing $\rightarrow$ ontology activation $\rightarrow$ tableau calculus with rule-level salience. Guidance path: the model generator delegates frontier ordering to a pluggable interface (symbolic comparator in Design~A or learned/external cost in Design~B). The priority queue orders open branches; Design~B scores at open leaves only.}
+  \label{fig:shared-arch}
+\end{figure}
+
+\paragraph{Cross-references and labels.}
+This runtime assumes the theoretical framework in Chapter~\ref{chap:systemdesign}: logic signature (\S\ref{subsec:logic-signature}), ontology (\S\ref{ch:ontology}), tableau rules and salience (\S\ref{subsec:tableau-salience}), and guidance paradigms (\S\ref{sec:guidance-paradigms}). Implementation-specific details follow in \S\ref{sec:java-policy} (Design~A) and \S\ref{sec:python-proto} (Design~B).
+
+
+\FloatBarrier
+
+\section{Design A: Java Policy Engine}
+\label{sec:java-policy}
+
+\noindent
+Design~A instantiates the shared system architecture \ref{sec:guidance-paradigms} in a multithreaded Java stack that steers tableau expansion with symbolic guidance policies. The engine maintains a knowledge-graph ontology of situations, frames, roles, and semantic types; integrates parsed sentences into this ontology; and explores candidate interpretations by expanding open tableau leaves under a policy-driven priority queue. Salience is updated after rule applications and informs witness selection, while guidance remains a separate control layer that orders which branches are expanded next.
+
+\subsection{Modules and Data Flow}
+
+\paragraph{Ontology and parsing.}
+Input narratives arrive as lists of parsed sentence objects that preserve surface forms (verb, typed actors, negation). The ontology module matches these entries to situation/frame templates, instantiates frames, fills role slots, and activates the associated situation; the resulting predicates populate the logical workspace consumed by the tableau engine. Individuals are typed via \textit{semType} relations and unknown referents are introduced existentially, enabling later unification. This grounding step ensures that each linguistic input is embedded in a coherent structure before inference proceeds.
+
+\paragraph{Tableau core and salience.}
+The tableau is a recursive structure whose open leaves represent candidate interpretations; non-branching rules saturate the current branch, while disjunctive rules create new leaves. Salience metadata is boosted for newly introduced individuals and decays across expansions, providing a signal for witness selection that remains independent from the queue ordering policy. The Java stack consumes the ontology, updates salience after each rule instantiation, and prepares metadata for guidance.
+
+\paragraph{Model generator and guidance interface.}
+A model generator maintains the search fringe as a priority queue of open branches. Guidance is realised as a modular interface: in Design~A, policies implement a \emph{comparator} that orders nodes; the same abstract contract can later host cost functions in Design~B without altering the tableau or ontology code paths. Each time a new node is created, it is inserted according to the comparator, and workers dequeue according to current priorities. This isolates inference from search control and keeps runs reproducible.
+
+\subsection{Priority-Queue Policies}
+
+Design~A implements three symbolic policies via comparator modules. These policies are used consistently throughout the Java evaluation pipeline; experiments record elapsed time, explored models, and whether a consistent model was found for each story, while interpretation of those outcomes is deferred to later chapters.
+
+
+\begin{itemize}
+  \item \textbf{Breadth-first (BFS).} Orders nodes by shallowest depth first, approximating level-order traversal over the constructed models.
+  \item \textbf{Depth-first (DFS).} Prefers deeper nodes, exploring along one branch before backtracking.
+  \item \textbf{Custom (salience-aware).} Prioritises (i) greater sentence depth, (ii) fewer newly introduced individuals, and (iii) more accumulated formulas. This comparator exploits ontology- and salience-derived structure while staying lightweight.
+\end{itemize}
+
+\paragraph{Motivation for custom policy.}
+The Custom comparator encodes search preferences that are natural for tableau-style model generation in short narratives. Preferring greater sentence depth biases expansion toward branches that have already incorporated more of the dialogue, so constraints introduced later (where pronoun ambiguities typically appear) become available earlier and the search avoids spending effort on still-underspecified partial models. Preferring fewer newly introduced individuals mitigates existential blow-up: when multiple witnesses are possible, branches that re-use salient discourse entities tend to stay smaller and align better with the salience assumptions used elsewhere in the system. Finally, preferring more accumulated formulas approximates a most-constrained-first discipline: branches closer to saturation expose inconsistencies earlier under ontology checks and can be pruned sooner. Together, these priorities provide a lightweight way to steer exploration toward coherent, compact candidates without introducing domain-heavy scoring or learned guidance.
+
+\subsection{Concurrency Model and Runtime Controls}
+
+The implementation supports both sequential and parallel execution via a worker pool. In the sequential configuration, a single worker repeatedly pops from the priority queue, applies tableau rules (saturating non-branching rules), pushes any branched successors, and continues until a stopping condition. In the parallel configuration, multiple workers (e.g., twelve) share the same concurrent priority queue and coordinate expansion under per-iteration time limits. Two queue-related knobs stabilise behaviour:
+
+\begin{itemize}
+  \item \textbf{Drain size.} The number of items popped from the priority queue per iteration before priorities are recomputed; this limits priority churn under high concurrency.
+  \item \textbf{Per-iteration timeout.} A wall-clock budget (milliseconds) for an expansion cycle; used to bound latency and keep runs comparable across policies.
+\end{itemize}
+
+A \emph{worker count} parameter switches between 1-thread and multi-threaded operation. The same code path is used for both modes, enabling direct comparison of single-thread and 12-thread runs later in the Results chapter.
+
+\subsection{Consistency Checks and Pruning}
+
+Consistency checks enforce ontological well-formedness during expansion. The engine prunes branches that violate constraints such as unique frame-role assignments and domain restrictions (e.g., murderer $\neq$ victim) or that disrupt situation-specific coherence. These checks interact with salience by preventing growth of implausible branches before they consume queue budget, but they do not alter the guidance interface; pruning happens inside inference, whereas ordering remains the policy's responsibility.
+
+\subsection{I/O, Logging, and Reproducibility Hooks}
+
+Runs emit human-readable logs that capture policy, thread count, timeout, and summary metrics (time in milliseconds, explored-model count). Output filenames encode worker and timeout settings; naming conventions and examples are listed in Appendix~\ref{app:reproducibility}. Build and run instructions, along with directory layout (ontology location and story files), are specified in the reproducibility appendix and referenced by the experiments chapter. \emph{No interpretation} is attached to these files here; they serve solely as artefacts for later reporting.
+
+\subsection{Capabilities and Limitations (Design A, Implementation View)}
+
+From an implementation standpoint, Design~A provides (i) a reproducible tableau engine with salience-aware rule application, (ii) pluggable comparator policies, (iii) a concurrent priority queue with drain-size and per-iteration timeout controls, and (iv) deterministic logging suitable for tabular reporting. The stack deliberately avoids learned components; it relies on the explicit ontology and salience calculus and defers any scoring-based guidance to Design~B. Any observations about stability or comparative efficiency are reserved for Chapters~5--6.
+
+\begin{table}[t]
+  \captionsetup{width=\textwidth}
+  \caption{Java engine tunables and controls used in Design~A. Values are set per run; commands and filenames are listed in Appendix~\ref{app:reproducibility}.}
+  \label{tab:java-tunables}
+  \small
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.34\textwidth} >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Description} \\
+    \midrule
+    
+    Priority comparator &
+    \vspace{1mm}
+    One of \emph{BFS}, \emph{DFS}, or \emph{Custom}. The custom policy prefers (i) greater depth (\(\uparrow\)), (ii) fewer newly introduced individuals (\(\downarrow\)), and (iii) more accumulated formulas (\(\uparrow\)). \\
+
+    Drain size &
+    \vspace{1mm}
+    Number of items popped from the priority queue per iteration before recomputing priorities; reduces priority churn and stabilises ordering under concurrency. \\
+
+    Per-iteration timeout &
+    \vspace{1mm}
+    Wall-clock budget (in milliseconds) for an expansion cycle; applied in both single-thread and multi-thread runs to bound latency and keep configurations comparable. \\
+
+    Worker count &
+    \vspace{1mm}
+    Runtime parallelism: sequential (1 worker) or multi-threaded (e.g., 12 workers) sharing a concurrent priority queue. \\
+
+    Consistency checks &
+    \vspace{1mm}
+    Ontology- and frame-level constraints enforced during expansion (e.g., unique frame-role assignments; domain restrictions such as murderer \(\neq\) victim); violating branches are pruned inside inference. \\
+
+    Log outputs &
+    \vspace{1mm}
+    Text files with configuration-encoded names summarising policy, thread count, timeout, elapsed time, and explored-model counts; used later for tabular reporting. See Appendix~\ref{app:reproducibility} for file-naming conventions. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Notes on Terminology and Cross-References}
+This section adheres to the new-draft terminology: \emph{guidance} as the decoupled search-control layer; \emph{policy} as a symbolic comparator over search states; \emph{model generator} as the queue-backed orchestrator; and \emph{salience} as rule-level metadata for witness selection. Conceptual background resides in Chapter~\ref{chap:systemdesign}; evaluation protocols and numeric outcomes appear in Chapters~\ref{ch:experiments}--\ref{ch:results}.
+
+\section{Design B: Python Data-Driven Prototypes}
+\label{sec:python-proto}
+
+Design~B reuses the shared tableau calculus and salience mechanism but replaces symbolic policies with data-driven guidance that operates on a projected state. The Python stack mirrors the search loop of Design~A while storing event-level literals and deferring scoring to \emph{open leaves} so that encoders can consume complete bundles. Guidance modules include (i) static policies for parity checks with Java ordering, (ii) neural cost functions (GRU baseline and a variant with contextual embeddings), and (iii) an external heuristic that ranks branches from short textual descriptions. 
+
+\paragraph{Projected state and scoring locus.}
+After ontology-grounded expansion \\
+(situations/frames/roles) is conceptually available, the Python tooling \emph{projects} each open branch to grouped event literals: \texttt{subject(e,\,\_)}, \texttt{verb(e,\,\_)}, \texttt{object(e,\,\_)}, plus an ad-hoc \texttt{adjective(adj, a)} predicate used only in Design~B. The projection omits explicit frame identifiers; encoders therefore consume event-indexed bundles rather than ontology nodes. Because encoders require the full bundle, branches are scored only once they are open leaves. The tableau rules and rule-level salience are otherwise unchanged. 
+
+\paragraph{Search core.}
+The prototype keeps the model generator and priority-queue discipline from the shared runtime. It applies the same focus strategy and salience updates as Design~A but stores the projected bundles instead of ontology frames/roles. Node expansion proceeds deterministically under the calculus; when an open leaf forms, the guidance interface requests a score and pushes the branch back into the priority queue with that priority.
+
+\paragraph{Static policies (parity checks).}
+For validation, the Python implementation re-creates simple static ordering signals (average-salience and minimum-events) to verify that, when identical guidance is used, the Python stack yields the same ordering as the Java engine. These baselines serve as a sanity check on the search implementation rather than an alternative to learned scoring.
+
+\paragraph{Neural cost functions.}
+The main learned module encodes the sequence of event bundles with a gated recurrent unit (GRU) and maps the final state to a scalar priority (Figure~\ref{fig:gru-cost}). A variant augments inputs with contextual embeddings (BERT) where applicable. Training follows two stages: (1) \emph{trace regression} to reproduce the average-salience ordering learned from synthetic policy traces, and (2) \emph{contrastive fine-tuning} on human-annotated preferences over projected interpretations. The intent is to match symbolic policy orderings and then adapt toward human judgements while keeping the calculus fixed.
+
+\paragraph{External heuristic.}
+As an additional scorer, a prompted heuristic ranks successor branches from short textual descriptions and returns a scalar priority to the same queue. This module does not replace the tableau or the projection; it only supplies priorities that the search loop consumes.
+
+\paragraph{Runtime interface and reproducibility hooks.}
+Design~B uses the same priority-queue API as Design~A but calls the guidance interface at open leaves. Example commands and paths are provided in Appendix~\ref{app:reproducibility}: experiment demos, data perparation, and training scripts. These references define the environment (Python~3.10+, PyTorch) and seeds.
+
+\paragraph{Representation contrast (storage view).}
+Table~\ref{tab:state-repr} summarises the stored-state difference between designs: Design~A persists ontology structures and constraints directly; Design~B stores event bundles and relies on the shared calculus/salience during expansion while leaving ontological checking implicit in the logic.
+
+\paragraph{Operational notes.}
+\begin{compactitem}
+  \item \textbf{Score-at-leaf constraint.} Scoring is postponed until a branch is an open leaf with a complete event bundle; until then, expansion is calculus-driven with rule-level salience.
+  \item \textbf{Interface parity.} Static policies confirm queue-ordering parity with Java when the same guidance signal is used.
+  \item \textbf{Encoders.} The GRU cost function is the primary learned scorer; an attention-based encoder was prototyped but is optional to include as a figure in this chapter.
+\end{compactitem}
+
+\begin{table}[t]
+  \centering
+  \caption{Stored state representation by design (for later cross-reference).}
+  \label{tab:state-repr}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.24\textwidth} >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Design} & \textbf{Stored state (search nodes)} \\
+    \midrule
+    Design A (Java) & Ontology-grounded situations, frames, roles, semantic types; salience metadata used for witness selection during rule application. \\
+    Design B (Python) & Projected event-level bundles \texttt{subject/verb/object} plus ad-hoc \texttt{adjective} (Design~B only); no frame identifiers retained; scoring invoked at open leaves. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \begin{tikzpicture}[
+    font=\small,
+    node distance=8mm,
+    >=Latex,
+    rounded corners=2pt,
+    blk/.style={draw, fill=gray!6, very thick, align=center, minimum width=0.72\textwidth, inner sep=6pt},
+    head/.style={draw, fill=gray!12, very thick, align=center, minimum width=0.72\textwidth, inner sep=6pt},
+    side/.style={draw, dashed, fill=white, align=center, inner sep=4pt, minimum width=0.36\textwidth}
+  ]
+
+  % Top input to bottom outputs
+  \node (inp)   [blk] {\textbf{Input (semantic model + context vector)}};
+  \node (embed) [blk, below=of inp]  {\textbf{Input Embedding}};
+  \node (fc)    [blk, below=of embed] {\textbf{Fully-connected feature extraction block}\\\emph{(compression / projection)}};
+  \node (gru)   [blk, below=of fc]    {\textbf{GRU}};
+  \node (pred)  [head, below=of gru]  {\textbf{Prediction head}};
+
+  \node (score) [side, below=of pred, xshift=-0.18\textwidth] {\textbf{Raw heuristic score}};
+  \node (ctx)   [side, below=of pred, xshift=+0.18\textwidth] {\textbf{New context vector}};
+
+  % Main vertical flow with edge labels
+  \draw[->, very thick] (inp)   -- node[midway, right, fill=white, inner sep=2pt]{Sentence} (embed);
+  \draw[->, very thick] (embed)  -- node[midway, right, fill=white, inner sep=2pt]{Embedded sentence} (fc);
+  \draw[->, very thick] (fc) -- node[midway, right, fill=white, inner sep=2pt]{Extracted features} (gru);
+  \draw[->, very thick] (gru)   --  (pred);
+  \draw[->, very thick] (pred)  -- (score);
+
+  % Context passthrough with arrow label (no extra node)
+  \draw[->, very thick]
+    (inp.east) .. controls +(2.0,-0.2) and +(2.0,0.2) ..
+    node[midway, right, fill=white, inner sep=2pt]{Context vector}
+    (gru.east);
+
+      \draw[->, very thick]
+    (gru.east) .. controls +(4.0,-0.2) and +(2.0,0.2) .. 
+    (ctx.east);
+
+  \end{tikzpicture}
+  \caption{Design~B GRU cost function.}
+  \label{fig:gru-cost}
+\end{figure}
+
+
+
+
+\begin{figure}[t]
+  \centering
+  \begin{tikzpicture}[
+    font=\small,
+    node distance=8mm,
+    >=Latex,
+    rounded corners=2pt,
+    blk/.style={draw, fill=gray!6, very thick, align=center
+    % , minimum width=0.72\textwidth
+    , inner sep=6pt},
+    head/.style={draw, fill=white, thick, align=center
+    % , minimum width=0.72\textwidth
+    , inner sep=6pt
+    },
+    side/.style={draw, dashed, fill=white, align=center, inner sep=4pt
+    % , minimum width=0.36\textwidth
+    }
+  ]
+
+  % Top input to bottom outputs
+  \node (inp)      [blk] {\textbf{Input (semantic model + context vector)}};
+  \node (embed)    [blk, below=of inp]  {\textbf{Input Embedding}};
+  \node (enc)      [blk, below=of embed] {\textbf{Encoding / Compression}};
+  \node (pos)      [head, left=of enc]   {\textbf{Custom Positional Encoding}};
+  \node (attn)     [blk, below=of enc] {\textbf{Multi-headed attention}};
+  \node (scoretok) [head, left=of attn]   {\textbf{Score token (prepended)}};
+  \node (lin)      [blk, below=of attn, xshift=-0.3\textwidth] {\textbf{Linear block}};
+
+  \node (score)    [side, below=of lin] {\textbf{Raw heuristic score}};
+  \node (ctx)      [side, below=of lin, xshift=0.25\textwidth]             {\textbf{New context vector}};
+  \node (embedout) [side, below=of lin, xshift=0.59\textwidth] {\textbf{Context-aware sentence embedding}};
+
+  % Main vertical flow with edge labels
+  \draw[->, very thick] (inp)      -- node[midway, right, fill=white, inner sep=2pt]{Sentence} (embed);
+  \draw[->, very thick] (embed)    -- node[midway, right, fill=white, inner sep=2pt]{Embedded sentence}  (enc);
+  \draw[->, very thick] (enc)      -- node[midway, left, fill=white, inner sep=2pt]{Positionally encoded sentence} (attn);
+  \draw[->, very thick] (pos)      -- (enc);
+  \draw[->, very thick] (scoretok) -- (attn);
+  \draw[->, very thick] (attn)     -- node[midway, left, fill=white, inner sep=2pt]{Aggregated features} (lin);
+  \draw[->, very thick] (scoretok)      -- (attn);
+  \draw[->, very thick] (lin)      -- (score);
+  \draw[->, very thick] (attn)      -- (ctx);
+  \draw[->, very thick] (attn)      -- (embedout);
+
+  % Context passthrough with arrow label (no extra node)
+  \draw[->, very thick]
+    (inp.east) .. controls +(2.2,-0.2) and +(2.2,0.2) ..
+    node[midway, right, fill=white, inner sep=2pt]{Context vector}
+    (attn.east);
+
+  \end{tikzpicture}
+  \caption{Design~B attention-based encoder (input at top, outputs at bottom) with arrow annotations.}
+  \label{fig:attn-encoder}
+\end{figure}
+
+
+\paragraph{Cross-references.}
+This section adopts the new-draft terminology for \emph{guidance}, \emph{policy} (symbolic comparator), and \emph{cost function} (learned scalar scorer). For the theoretical background on the projection and encoder motivations, see Chapter~3; for concrete training/evaluation commands, see Appendix~\ref{app:reproducibility}. Numeric outcomes and stability observations appear in Chapters~5--6. 
+
+
+\section{Implementation Summary}
+\label{sec:impl-summary}
+
+\noindent\textbf{Scope.} This section consolidates the implementation facts established in \S\ref{sec:shared-arch}, \S\ref{sec:java-policy}, and \S\ref{sec:python-proto}. The shared runtime separates inference (tableau calculus and ontology grounding with rule-level salience) from search control (guidance), so that symbolic comparators (Design~A) and learned/external scorers (Design~B) can be swapped without modifying the reasoning core. Salience affects witness selection during rule application only; it does not order the frontier.
+
+\paragraph{Capabilities (Design A: Java).}
+\begin{itemize}
+  \item \emph{Policy-driven priority queue.} Pluggable comparator policies---Breadth-First (BFS), Depth-First (DFS), and a Custom comparator that prefers greater sentence depth, fewer newly introduced individuals, and more accumulated formulas---determine frontier order.
+  \item \emph{Concurrent expansion.} A worker pool shares a concurrent priority queue; the same code path supports single-thread and multi-thread runs. Queue \emph{drain size} and a per-iteration \emph{timeout} bound churn and latency.
+  \item \emph{Ontology checks and pruning.} Frame-role uniqueness and domain constraints (e.g., \emph{murderer} $\neq$ \emph{victim}) are enforced during expansion to prune infeasible branches, independent of policy ordering.
+  \item \emph{Reproducible I/O.} Runs emit human-readable logs with policy, worker count, timeout, elapsed time, and explored-model counts; filenames encode settings and are referenced from the reproducibility appendix. 
+\end{itemize}
+
+\paragraph{Limitations (Design A: Java, implementation view).}
+\begin{itemize}
+  \item Search control is purely symbolic (no learned scoring); salience remains a rule-level signal rather than a frontier order.
+  \item Coverage is constrained by the ontology and the controlled language fragment used in the pipeline.
+\end{itemize}
+
+\paragraph{Capabilities (Design B: Python prototypes).}
+\begin{itemize}
+  \item \emph{Projection + parity baselines.} The search core mirrors Design~A’s calculus but stores projected event-level bundles (\texttt{subject/verb/object} and an ad-hoc \texttt{adjective} predicate used only here). Static policies reproduce the ordering of their Java counterparts for parity checks. 
+  \item \emph{Learned/external guidance.} A GRU cost function (and a variant with contextual embeddings) assigns scalar priorities; an external heuristic can also rank successor branches from short textual descriptors. All scorers plug into the same queue interface. 
+  \item \emph{Score-at-leaf discipline.} Because encoders consume complete bundles, branches are scored only at open leaves; the calculus and rule-level salience remain unchanged.
+  \item \emph{Reproducibility hooks.} Example commands, paths, seeds, and environment notes are provided alongside the static-policy demo and two-stage training scripts.
+\end{itemize}
+
+\paragraph{Limitations (Design B: Python, implementation view).}
+\begin{itemize}
+  \item Stored state omits explicit frame identifiers (projection); guidance depends on encoder features and, when used, an external heuristic.
+  \item Operationally, score computation is deferred until open leaves; invoking an external heuristic introduces additional latency by design. 
+\end{itemize}
+
+\noindent\textbf{Forward links.} The experimental matrix and artefacts referenced here are summarised later (\S5.1–\S5.2), and numeric outcomes are reported in the Results chapter, with logs produced via the reproducibility steps in the appendix. \textit{(Labels for \S5 and appendix entries follow the final numbering of Chapters~5--A.)} The following chapter (\S\ref{ch:experiments}) describes how these implementations were evaluated under comparable runtime constraints.

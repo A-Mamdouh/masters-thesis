@@ -1,0 +1,169 @@
+\chapter{Results}
+\label{ch:results}
+
+This chapter reports empirical outcomes for the experiments without interpretation.
+Design~A (Java) is evaluated under three comparator policies (BFS, DFS, Custom) and two
+thread configurations (1 worker, 12 workers). Design~B (Python) reports static/learned
+guidance on the current story sets. All runs share the same tableau calculus and rule-level
+salience; only the guidance layer and thread configuration vary (per Chapters~\ref{ch:implementations}--\ref{ch:experiments}).
+
+\subsubsection*{Common logging}
+All results are derived from the same structured logs (policy/scorer, worker count, per-iteration timeout, explored models, elapsed time). See Appendix~\ref{app:reproducibility} for file locations and naming conventions. Results are reported in order of implementation: Design~A (symbolic) followed by Design~B (data-driven).
+
+\section{Results A: Policy Variants (Design A, Java)}
+\label{sec:results-java}
+
+Table~\ref{tab:policy_runtimes_java} aggregates elapsed time (milliseconds) and explored
+models for the Java engine. Single-thread averages are taken directly from the 1~worker
+logs (200\,ms per-iteration budget). Multi-thread averages are computed over the five
+benchmark variants from the 12~worker logs (same per-iteration budget).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{T6.A: Policy runtimes and explored models for Design~A (Java). Each entry reports the mean across the five benchmark variants under 1-thread and 12-thread configurations (per-iteration timeout: 200\,ms).}
+\label{tab:policy_runtimes_java}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+\textbf{Configuration} & \textbf{Metric} & \textbf{Custom} & \textbf{DFS} & \textbf{BFS} \\
+\midrule
+\multirow{2}{*}{1 worker} & Avg. time (ms) & 1{,}590 & 230{,}470 & 2{,}499 \\
+ & Avg. models explored & 1{,}312 & 102{,}606 & 2{,}307 \\
+\midrule
+\multirow{2}{*}{12 workers} & Avg. time (ms) & 1{,}314 & 124{,}191 & 113{,}220 \\
+ & Avg. models explored & 4{,}080 & 70{,}431 & 257{,}536 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.25em}
+\raggedright
+\emph{Notes.} 12-worker means are computed over the five story variants in the log. Some uninformed-policy variants exhibit runaway expansions; the averages above include those cases.
+\end{table}
+
+\section{Results B: Static, Learned, and External Guidance (Design B, Python)}
+\label{sec:results-python}
+
+Design~B operates on projected event-level bundles with score-at-leaf evaluation. The
+current results summarize two test sets:
+
+\begin{itemize}
+  \item \textbf{Story-bank baseline} (4 short stories): policies evaluated as controls.
+  \item \textbf{Annotated regression set} (9 mixed stories): static and learned/external guidance.
+\end{itemize}
+
+Table~\ref{tab:policy_python_results} reports the annotated-set averages.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{T6.C: Average performance of Design~B (Python) guidance variants over the 9-story annotated regression set.}
+\label{tab:policy_python_results}
+\begin{tabularx}{\linewidth}{@{}lYYYX@{}}
+\toprule
+\textbf{Policy} & \textbf{Avg. time (ms)} & \textbf{Avg. models} & \textbf{Success rate} & \textbf{Notes} \\
+\midrule
+CustomJava & 881.4 & 90.9 & 1.00 & Mirrors Java Custom ordering on this set \\
+DFS & 76{,}879.9 & 8{,}433.6 & 0.89 & Complete on most runs; slow \\
+BFS & 9{,}122.0 & 747.3 & 0.44 & Incomplete on this set \\
+NeuralPolicy & 9{,}083.4 & 794.9 & 0.33 & Lower solve rate on longer variants \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Ranking agreement.}
+The branch-ordering agreement metric from \S\ref{sec:eval-metrics} was computed for the
+CustomJava scorer against the Java reference ordering. On the annotated regression set the
+mean Spearman $\rho$ is $1.0$ with top-$5$ accuracy of $1.0$ (per
+`experiments/policies/summary.json`).
+
+\paragraph{Training metrics (Design B).}
+The trace-regression phase reports mean-squared error declining from $0.1466$ in epoch~1
+to $7.7 \times 10^{-4}$ by epoch~10, while binary trace-alignment accuracy reaches $1.0$
+from epoch~2 onward (`experiments/policies/CustomJava_logs/metrics.json`). Preference
+fine-tuning was not run for the compiled results.
+
+For completeness, the baseline sweep over the 4-story set is not tabulated here; aggregate values are available in the accompanying logs (see Appendix~\ref{app:reproducibility}).
+
+\section{Cross-Family Comparison}
+\label{sec:cross-family}
+
+Table~\ref{tab:cross_family_comparison} contrasts representative aggregates from both
+implementations using their respective controls or learned counterparts.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{T6.B: Cross-family comparison between Design~A (Java) and Design~B (Python). Values shown are representative averages drawn from Tables~\ref{tab:policy_runtimes_java} and \ref{tab:policy_python_results} and the baseline summary.}
+\label{tab:cross_family_comparison}
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\textbf{Aspect} & \textbf{Design~A (Java)} & \textbf{Design~B (Python)} \\
+\midrule
+Guidance mechanism & Symbolic comparator: BFS / DFS / Custom & Static parity, learned cost, external heuristic \\
+Representative runtime & $\sim$1.3$\times$10\textsuperscript{3}\,ms (Custom, 1 worker) & $\sim$0.9$\times$10\textsuperscript{3}\,ms (CustomJava, annotated set) \\
+Representative explored models & $\sim$1.3$\times$10\textsuperscript{3} (Custom, 1 worker) & $\sim$9$\times$10\textsuperscript{1} (CustomJava, annotated set) \\
+Success on current sets & Model found in all benchmark stories (policies as configured) & CustomJava: 1.00; NeuralPolicy: lower success on longer variants \\
+Variance (operational) & Low under fixed drain-size / timeout & External heuristic adds latency; learned policy shows variability \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Ablations and Qualitative Error Patterns}
+\label{sec:ablations-qual}
+
+Ablation knobs and error categories follow the setup in Chapter~\ref{ch:experiments}
+(\S\ref{sec:eval-protocols}). Where applicable in the current logs:
+(i) varying thread count and queue budget affects uninformed policies disproportionately;
+(ii) longer templates increase variance for learned/external guidance. The concrete
+examples below illustrate the two dominant failure modes observed in the annotated and
+Java-variant runs.
+
+\begin{figure}[htbp]
+  \centering
+  \footnotesize
+  \begingroup
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.30\linewidth}X>{\raggedright\arraybackslash}p{0.16\linewidth}>{\raggedright\arraybackslash}p{0.16\linewidth}@{}}
+    \toprule
+    \textbf{Failure type (story)} & \textbf{Surface cues} & \textbf{Custom} & \textbf{Neural} \\
+    \midrule
+    Lexical drift (annotated story ``David and Emma infiltrate a bank...'') &
+    \begin{tabular}[t]{@{}l@{}}
+      \texttt{she brought the cake to vault.}\\
+      \texttt{he infiltrated there.}\\
+      \texttt{she accused him over it.}
+      \vspace{3mm}
+    \end{tabular} &
+    \begin{tabular}[t]{@{}l@{}}
+      1.05\,s\\
+      87 models\\
+      success
+    \end{tabular} &
+    \begin{tabular}[t]{@{}l@{}}
+      15.4\,s\\
+      1{,}049 models\\
+      failure
+    \end{tabular} \\
+    Role swap (Java design variant~2) &
+    \begin{tabular}[t]{@{}l@{}}
+      \texttt{someone murdered her there.}\\
+      \texttt{he did not murder her.}\\
+      \texttt{he murdered her.}
+    \end{tabular} &
+    \begin{tabular}[t]{@{}l@{}}
+      0.48\,s\\
+      60 models\\
+      success
+    \end{tabular} &
+    \begin{tabular}[t]{@{}l@{}}
+      9.85\,s\\
+      1{,}021 models\\
+      failure
+    \end{tabular} \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+  \caption{Representative failure cases from the annotated experiments. Times are converted from milliseconds. Lexical drift introduces unseen vocabulary and moves the learned scores away from the reference; the symbolic policy remains stable. In the role-swap case, alternating mentions of ``he'' (john vs. unknown human) cause oscillation, so the correct branch is not prioritised. The last two columns report time/models and whether the run succeeded.}
+  \label{fig:error_example}
+\end{figure}

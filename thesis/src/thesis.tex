@@ -1,0 +1,134 @@
+% Document class for LME theses: lmedoc
+% %LANGUAGE
+% %CONFIG
+%    The option ``german`` uses german.sty
+%    For english papers, use the ``english`` option
+% Possible types of theses:
+% bt - Bachelor's thesis
+% mt - Master's thesis
+% diss - Dissertation
+% sa - Student thesis
+% fp - Forschungspraktikum
+% pa - Projektarbeit
+%\documentclass[german,bt]{lmedoc/lmedoc}
+\documentclass[english,mt]{lmedoc/lmedoc}
+
+
+%%%%%%%%%%%%%%%%%%
+% pdflatex and lualatex are supported
+% ++ ``Umlaut`` support
+%    The package ``inputenc`` can be used to write Umlaute or the german double s
+%    directly. You need to use the correct encoding, e.g. latin1.
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+\else
+  \ifXeTeX
+     \usepackage{fontspec}
+  \else 
+     \usepackage{luatextra}
+  \fi
+\fi
+
+\usepackage{proof}
+% \usepackage[tableaux]{prooftrees}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{easy-todo}
+\usepackage{paralist}
+\usepackage[section]{placeins}
+\usepackage{multirow}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\usetikzlibrary{arrows.meta,positioning,fit,shapes.multipart,shapes.misc,calc}
+
+
+%Load additional packages
+\usepackage{lmedoc/packages}
+% put in this file your abbreviations
+\input{abbreviations.tex}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% supress messages because of underful hbox, this is not a problem
+\hbadness=10000
+
+
+
+% some useful commands
+\makeatletter % let's define a single dot
+\DeclareRobustCommand\onedot{\futurelet\@let@token\@onedot}
+\newcommand{\@onedot}{\ifx\@let@token.\else.\null\fi\xspace}
+\makeatother
+
+
+
+% Sets the bib file
+
+\addbibresource{literature.bib}
+
+% When writing a large document, it is sometimes useful to work on selected sections of the document.
+% Use this command to only build the document partially. Speeds up the developement cycle.
+% For the final product, this has to be commented out.
+%\includeonly{introduction,appendix,foo,bar}
+
+
+\pagenumbering{roman}
+
+\begin{document}
+\clearpage
+% %CONFIG
+% This is for students' theses
+  \begin{deckblatt}
+    \Titel{Guided Semantic Model Generation: A Comparative Study of Symbolic and Learned Guidance for Tableau-Based Interpretation} % Title
+    \Name{Mamdouh} % Last name
+    \Vorname{Ahmed} % Given name
+    \Geburtsort{Cairo} % Place of birth
+    \Geburtsdatum{01.01.1999} % Date of birth
+    \Betreuer{Prof. Dr. Michael Kohlhase} % Advisor
+    \Start{20. April 2024} % Start of thesis
+    \Ende{30. November 2025} % End of thesis
+    %\ZweitInstitut{ZweitInstitut} % Cooperation partner
+  \end{deckblatt}
+
+
+\clearpage
+
+I certify that I have completed this work without outside assistance and without using any sources other than those indicated, and that the work has not been submitted to any other examination board in the same or a similar form and has not been accepted by any other examination board as part of an examination performance. All statements that have been taken verbatim or paraphrased are marked as such.
+\clearpage
+
+
+\begin{center}
+\bfseries
+% Abstract in German
+% {\selectlanguage{german}``Ubersicht}
+{\selectlanguage{english}Abstract}
+\normalfont
+\end{center}
+\input{abstract}
+\clearpage
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+\include{chapter_1_introduction/introduction}
+\clearpage
+\include{chapter_2_background/background}
+\clearpage
+\include{chapter_3_system_design/system_design}
+\clearpage
+\include{chapter_4_implementations/implementations}
+\clearpage
+\include{chapter_5_experiments/experiments}
+\clearpage
+\include{chapter_6_results/results}
+\clearpage
+\include{chapter_7_discussion_and_conclusion/discussion_and_conclusion}
+
+\clearpage
+\appendix
+\include{chapter_8_reproducibility/reproducibility}
+
+\selectlanguage{english}{\addcontentsline{toc}{chapter}{\bibname}}
+\printbibliography
+\end{document}

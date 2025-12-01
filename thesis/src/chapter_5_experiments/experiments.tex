@@ -1,0 +1,146 @@
+\chapter{Experiments}
+\label{ch:experiments}
+
+This chapter specifies the datasets, runtime settings, and evaluation protocols.  
+All runs share the tableau calculus and rule-level salience described earlier; only the guidance layer and thread configuration vary (see Chapters~\ref{ch:implementations} and~\ref{ch:results}).  
+Numerical results appear in Chapter~\ref{ch:results}.
+
+\section{Datasets and Experimental Setup}
+\label{sec:datasets-setup}
+
+\paragraph{Story banks.}
+Two sets of stories were used for evaluation:
+
+\begin{itemize}
+  \item \textbf{Story-bank baseline:} four short stories.
+  \item \textbf{Annotated regression set:} nine mixed stories (office, heist, and Java-derived templates) annotated with preferred interpretations for salience and anaphora.
+\end{itemize}
+
+Each story was processed into event-level predicates following the ontology in Chapter~\ref{ch:ontology}.  
+For every sentence, salience updates and ontology role mappings were recorded.  
+Ontology coverage by role type is summarized in Table~\ref{tab:benchmark_coverage}. Role counts were not recorded in the available logs for the compiled runs; we therefore report dataset sizes and descriptions.
+
+\paragraph{Common runtime.}
+Both designs share a queue-driven tableau generator with configurable per-iteration timeouts and drain-sizes. Guidance policies are the sole variable across conditions.
+
+\paragraph{Metrics.}
+The evaluation metrics collected for all runs are defined in \S\ref{sec:eval-metrics}.
+
+\paragraph{Hardware and process control.}
+All experiments were executed on the same workstation.  
+Worker count, per-iteration timeout, and queue drain-size are fixed per configuration and encoded in the log filenames.  
+Exact command lines and environment variables are documented in Appendix~\ref{app:reproducibility}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Benchmark story sets and ontology-role coverage.}
+\label{tab:benchmark_coverage}
+\begin{tabularx}{0.9\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Dataset} & \textbf{Description / Role Coverage} \\
+\midrule
+Story-bank baseline & 4 short stories (role-type counts not recorded in logs). \\
+Annotated regression set & 9 stories mixing office, heist, and Java templates (role-type counts not recorded). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Evaluation Metrics}
+\label{sec:eval-metrics}
+
+We distinguish between \emph{search-time} metrics (reported for both designs) and
+\emph{training-time} metrics (reported only for Design~B).
+
+\paragraph{Search-time metrics.}
+All evaluation runs record:
+\begin{itemize}
+  \item \textbf{Elapsed time (ms).} Total wall-clock runtime per story.
+  \item \textbf{Explored models.} Number of tableau leaves expanded until the first
+  consistent interpretation is found (or the run exhausts its budget).
+  \item \textbf{Success.} Binary indicator: True if a consistent model is found within the
+  timeout/queue budget, false otherwise.
+  \item \textbf{Ranking agreement (Design~B).} Agreement between the Python branch
+  ordering induced by a scorer and the reference ordering produced by the Java Custom policy.
+  We compute Spearman's $\rho$ over the ranked open leaves of each story and report the
+  mean across stories; $\rho = 1$ indicates identical rankings, while $\rho = 0$ reflects
+  chance-level agreement.
+\end{itemize}
+
+\paragraph{Training-time metrics (Design~B).}
+Neural scorer training happens outside of the search loop. For each phase we log:
+\begin{itemize}
+  \item \textbf{Trace-regression loss.} Mean-squared error between predicted priorities
+  and target priorities derived from policy traces (recorded per epoch in the training logs).
+  \item \textbf{Trace-regression accuracy.} Fraction of training records whose sigmoid
+  outputs fall on the same side of 0.5 as the trace-derived target (treated as a proxy for
+  ordering alignment).
+\end{itemize}
+
+Unless stated otherwise, all reported training values are computed on a held-out
+validation split with fixed seeds (train seed = 40, evaluation seed = 42).
+
+\section{Evaluation Protocols}
+\label{sec:eval-protocols}
+
+\subsection{Design A: Java Policy Engine}
+\label{sec:eval-java}
+
+Design A evaluates three symbolic comparator policies (\textit{Breadth-First Search}, \textit{Depth-First Search}, and a salience-aware \textit{Custom} policy) under two thread settings:
+
+\begin{itemize}
+  \item \textbf{1 Worker:} single-thread search; per-iteration timeout = 200 ms.
+  \item \textbf{12 Workers:} shared concurrent priority queue; per-iteration timeout = 200 ms.  
+\end{itemize}
+
+Queue drain-size and logging follow the implementation defaults. See Appendix~\ref{app:reproducibility} for file-naming conventions and commands.  
+No numeric values are reported in this chapter; see Chapter~\ref{ch:results} for aggregated results.
+
+\subsection{Design B: Python Data-Driven Prototypes}
+\label{sec:eval-python}
+
+Design B tests both static parity baselines and data-driven guidance mechanisms built on the same tableau interface.
+
+\paragraph{Static parity baselines.}
+These baselines (\textit{Average-salience}, \textit{Minimum-events}) verify ordering parity with the Java implementation.  
+Runs use a single-thread, score-at-leaf search; per-iteration timeout = 600 ms.  
+Metrics follow \S\ref{sec:eval-metrics} (search-time metrics).
+
+\paragraph{Learned cost functions.}
+Learning proceeds in two phases:
+Phase 1 reproduces average-salience orderings on synthetic traces,  
+Phase 2 fine-tunes on human-annotated preferences.  
+Evaluation uses single-thread search with score-at-leaf, 600 ms per-iteration timeout, and fixed seeds (training seed = 40; evaluation seed = 42).  
+Evaluation uses the search-time metrics in \S\ref{sec:eval-metrics}, and training reports the training-time metrics defined there.
+
+\paragraph{External heuristic.}
+A prompted scoring function (external LLM heuristic) ranks open leaves.  
+Evaluation uses single-thread search, per-iteration timeout = 800 ms.  
+Prompts and templates remain constant across runs; variance will be reported factually in Chapter~\ref{ch:results}.
+
+\subsubsection*{Common logging}
+All protocols record: policy name (or scorer), worker count, per-iteration timeout, explored models, and elapsed time in milliseconds. Filenames encode configuration parameters; see Appendix~\ref{app:reproducibility} for naming conventions and exact commands.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{T5.B: Run configurations for all experiments.}
+\label{tab:run_configurations}
+\begin{tabularx}{\textwidth}{@{}lcccX@{}}
+\toprule
+\textbf{Design} & \textbf{Policy type} & \textbf{Threads} & \textbf{Timeout (ms)} & \textbf{Notes / Seeds} \\
+\midrule
+A (Java) & Custom / DFS / BFS & 1 & 200 & Baseline single-thread setup. \\
+A (Java) & Custom / DFS / BFS & 12 & 200 & Parallel shared queue. \\
+B (Python) & Static parity & 1 & 600 & Evaluation seed = 42. \\
+B (Python) & Learned policy & 1 & 600 & Two-phase; train seed = 40; eval seed = 42. \\
+B (Python) & External heuristic & 1 & 800 & Prompted scoring; seed = 42. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Reproducibility Notes}
+\label{sec:repro-pointer}
+
+All environments, path settings, and exact command lines are listed in Appendix~\ref{app:reproducibility}.  
+This chapter defines only datasets and protocols; the following chapter reports the numerical outcomes of these runs (Chapter~\ref{ch:results}).

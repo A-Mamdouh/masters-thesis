@@ -1,0 +1,125 @@
+\chapter{Reproducibility}
+\label{app:reproducibility}
+
+This appendix explains how to rebuild all experiments reported in Chapter~\ref{ch:experiments} using the two reference implementations that live in this repository: the Java engine under \texttt{design\_java/} (Design~A) and the Python port under \texttt{python\_port/} (Design~B). The instructions assume the project root \texttt{/home/ahmed/projects/masters}; adjust the paths if you cloned the repository elsewhere.
+
+\section{Environment}
+\begin{itemize}
+  \item \textbf{Operating system.} Linux or macOS. The thesis results were collected on 6.12.48-1-MANJARO.
+  \item \textbf{CPU.} Multi-core CPU recommended. Java runs use up to 12 worker threads.
+  \item \textbf{RAM.} \(\geq\)16~GB recommended (8~GB is sufficient for Java plus moderate Python experiments).
+  \item \textbf{Java toolchain.} OpenJDK~17 or later; \texttt{javac} and \texttt{java} must be on \texttt{PATH}.
+  \item \textbf{Python toolchain.} Python>=3.11 with \texttt{pip} or \texttt{uv}. The port depends on PyTorch, NumPy, and tqdm. Use the supplied \texttt{python\_port/uv.lock} for deterministic installs via \texttt{uv sync}.
+  \item \textbf{GPU (optional).} Needed only if you want to accelerate neural policy training.
+  \item \textbf{Random seeds.} Java relies on deterministic traversal; Python scripts fix seeds internally (training seed~40, evaluation seed~42, external heuristic seed~42). Set \texttt{PYTHONHASHSEED=0} for complete determinism.
+\end{itemize}
+
+\section{Repository layout}
+\begin{itemize}
+  \item \textbf{Design~A:} design\_java/
+    \begin{compactitem}
+      \item \texttt{Main.java}: entry point for all Java experiments.
+      \item \texttt{modelGeneration/}: priority queue, tableau rules, heuristics.
+      \item \texttt{ontology/} and \texttt{stories/}: knowledge graph fragment and benchmark narratives.
+      \item Logs follow the filename pattern test\_results\_W\_workers\_Tms.txt (for example, test\_results\_12\_workers\_200ms.txt).
+    \end{compactitem}
+  \item \textbf{Design~B:} python\_port/
+    \begin{compactitem}
+      \item src/nls\_python/model\_generation/: tableau port, policies, neural helpers.
+      \item data/: annotated story sets (train.json, val.json, test.json, java\_design\_test.json).
+      \item experiments/policies/: saved logs (story\_bank\_results.txt, annotated\_test\_results.txt), summaries and checkpoints.
+      \item scripts/: bash helpers for batch experiments.
+    \end{compactitem}
+\end{itemize}
+
+\section{Design~A (\texttt{design\_java/})}
+\subsection*{Build}
+\begin{verbatim}
+cd design_java
+javac $(find . -name "*.java")
+\end{verbatim}
+Recompile after every code change; incremental compilation is fast (
+\(<1\)~s on the reference machine).
+
+\subsection*{Sequential baseline (1 worker)}
+\begin{verbatim}
+cd design_java
+java Main 1 200 > test_results_1_workers_200ms.txt
+\end{verbatim}
+The numeric arguments denote \texttt{<workers>} and \texttt{<per-iteration-timeout-ms>}. The log records, for each story, the narrative sentences, heuristic statistics (time in ms, explored models, success flag), and separators for readability. Aggregated numbers in Table~\ref{tab:policy_runtimes_java} are the arithmetic mean across the five Java story variants included in the file.
+
+\subsection*{Parallel configuration (12 workers)}
+\begin{verbatim}
+cd design_java
+java Main 12 200 > test_results_12_workers_200ms.txt
+\end{verbatim}
+The output format matches the single-worker run. To replicate the thesis tables, compute per-policy means over the five story variants and report both time and explored-model counts. The Java policy modules are deterministic, so re-running with the same story order yields identical numbers.
+
+\section{Design~B (\texttt{python\_port/})}
+All Python commands below assume you are inside \texttt{python\_port/}. Install dependencies via \texttt{uv sync} or \texttt{pip install -e .}.
+
+\subsection{Story-bank and annotated-set sweeps}
+The experiment harness mirrors the Java \texttt{Main}. It replays narratives, runs the requested policies, and writes aggregated logs.
+\begin{verbatim}
+# Story-bank baseline (4 stories, Custom/DFS/BFS)
+uv run python -m nls_python.model_generation.story_experiments \
+  --datasets data/test.json \
+  --base-policy CustomJava \
+  --policies DFS BFS \
+  --timeout-ms 600 \
+  --output experiments/policies/story_bank_results.txt
+
+# Annotated regression set (9 stories)
+uv run python -m nls_python.model_generation.story_experiments \
+  --datasets data/java_design_test.json data/test.json \
+  --base-policy CustomJava \
+  --policies DFS BFS NeuralPolicy \
+  --timeout-ms 600 \
+  --output experiments/policies/annotated_test_results.txt
+\end{verbatim}
+The resulting files contain one block per story with the same \texttt{HeuristicStatistics} summary used in Chapter~\ref{ch:results}. The averages quoted in Tables~\ref{tab:policy_python_results}--\ref{tab:cross_family_comparison} are computed from these files (mean across stories per policy).
+
+\subsection{Neural policy training and evaluation}
+The port provides a repeatable pipeline: dataset generation \(\rightarrow\) model training \(\rightarrow\) experiments. Commands use \texttt{uv run} to guarantee the locked dependency set.
+
+\paragraph{Generate supervision traces}
+\begin{verbatim}
+uv run python -m nls_python.model_generation.training_data \
+  --datasets data/train.json data/val.json data/test.json \
+  --policies CustomJava \
+  --output data/all.jsonl \
+  --train-output data/train_traces.jsonl \
+  --val-output data/val_traces.jsonl
+\end{verbatim}
+
+\paragraph{Train the neural cost function}
+\begin{verbatim}
+uv run python -m nls_python.model_generation.neural_training \
+  --dataset data/train_traces.jsonl \
+  --val-dataset data/val_traces.jsonl \
+  --epochs 10 --lr 3e-4 --device cpu \
+  --output checkpoints/neural.pt \
+  --log-dir logs/neural_train
+\end{verbatim}
+The script fixes \texttt{torch.manual\_seed(40)} internally. Use \texttt{--device cuda} if you have a GPU.
+
+\paragraph{Evaluate on annotated stories}
+\begin{verbatim}
+uv run python -m nls_python.model_generation.story_experiments \
+  --datasets data/java_design_test.json data/test.json \
+  --base-policy CustomJava \
+  --policies DFS BFS NeuralPolicy \
+  --neural-checkpoint checkpoints/neural.pt \
+  --timeout-ms 600 \
+  --output experiments/policies/annotated_test_results.txt
+\end{verbatim}
+This overwrites the earlier log with fresh neural numbers. To keep both versions, supply a different \texttt{--output}. The agreement metric used in Chapter~\ref{ch:results} is recomputed automatically when a neural policy is present.
+
+\section{Logging and seed management}
+\begin{itemize}
+  \item \textbf{Logging.} Both implementations log individual story blocks followed by aggregate statistics. Keep the raw files (test\_results\_*.txt and experiments/policies/*.txt); the Results chapter cites these exact paths.
+  \item \textbf{Seeds.} Java relies on deterministic ordering; no additional flags are required. Python scripts set seeds internally, but you can override them via environment variables (\texttt{PYTHONHASHSEED}, \texttt{TORCH\_SEED}) or CLI options (see \texttt{python\_port/scripts/} for examples).
+  \item \textbf{Hardware notes.} All timings in the thesis were collected on a 6-core/12-thread CPU with 32~GB RAM. When comparing against the reported numbers, ensure that the timeout, drain-size, and worker-count flags match those shown above and in Table~\ref{tab:run_configurations}.
+\end{itemize}
+
+Following the steps above reproduces every quantitative result in Chapters~\ref{ch:experiments}--\ref{ch:results}, including the neural-policy ablations and the cross-family comparison.

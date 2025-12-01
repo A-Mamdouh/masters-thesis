@@ -1,0 +1,126 @@
+\chapter{Discussion and Conclusion}
+\label{ch:discussion-conclusion}
+
+This chapter interprets the empirical findings of Chapter~\ref{ch:results}, ties them back to the guidance paradigms and design principles in Chapter~\ref{chap:systemdesign}, and states the main conclusions. We separate \emph{Discussion} (Section~\ref{sec:discussion}) from \emph{Conclusion} (Section~\ref{sec:conclusion}) to keep interpretation distinct from summary and outlook. The terminology remains consistent: a model generator over a tableau, salience at the rule level, and guidance from either symbolic policies (Design~A, Java) or learned scorers (Design~B, Python).
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Symbolic Guidance (Design A)}
+\label{sec:discussion-symbolic}
+
+The Java engine paired with the ontology of situations, frames, roles, and semantic types provided a robust baseline for guided model generation. Policies were implemented as comparators over frontier states in a concurrent priority queue, orthogonal to the salience mechanism that governs witness selection at the rule level. This separation is methodologically important: salience influences \emph{which} constants instantiate quantifiers when rules fire, while the policy determines \emph{which} partially expanded interpretations reach the head of the queue.
+
+Empirically, the custom policy (which prefers greater sentence depth, fewer new individuals, and more accumulated formulas) was the most dependable. On the benchmark stories it kept runtimes and explored models stable in both the single-thread and the twelve-worker settings (Table~\ref{tab:policy_runtimes_java}). Parallelism increased speculative work, as expected, but did not prevent the policy from finding a satisfying interpretation. The uninformed baselines behaved differently: BFS explored many more states with twelve threads, while DFS sometimes benefited from concurrency yet remained brittle because it commits early to deep paths that are later pruned by ontology checks.
+
+Two observations follow. First, lightweight symbolic comparators, when coupled with ontology-level consistency constraints and salience, are sufficient to steer tableau search effectively over the curated fragment used in this thesis. Second, the multithreaded execution and queue-drain/timeout tunables exposed by the Java implementation serve as meaningful levers for resource/control trade-offs without altering the logical calculus or the guidance abstraction (cf.\ Chapter~\ref{ch:implementations} and Table~\ref{tab:java-tunables}).
+
+\subsection{Data-Driven Guidance (Design B)}
+\label{sec:discussion-datadriven}
+
+The Python prototypes retain the same calculus and salience logic but operate on a projected event-semantics footprint where situation/frame structures are collapsed into grouped literals at the event level (subject, verb, object; with an ad-hoc adjective predicate confined to the Python side). This projection is by design: it reduces the stored state to a form that is more amenable to neural encoders while keeping rule application identical. The guidance layer in Design~B thus swaps symbolic comparators for learned cost functions (GRU encoders with optional contextual embeddings) and, in a separate control path, an external heuristic that ranks successor branches from textual descriptors.
+
+On held-out stories, neither the trace-regression models nor the human-refined variants delivered stable guidance. Small lexical substitutions re-ordered branches unpredictably, and the limited human-annotated set could not adequately correct biases learned from policy traces. The external heuristic sometimes recovered the intended branch but introduced additional latency and run-to-run variance that complicate controlled evaluation (cf.\ \mbox{Section~\ref{sec:results-python}}; see also \mbox{Table~\ref{tab:cross_family_comparison}}).
+
+These outcomes highlight a central challenge for learned guidance here: scorers need an inductive bias that reflects the process features of tableau growth (for example, salience dynamics and rule saturation) rather than surface lexical cues alone. Guidance must track the search state as a structured object, not just the surrounding sentence. Without that, learned scorers remain sensitive to lexical drift and to limited supervision.
+
+\paragraph{Overfitting signal.}
+Training logs for the CustomJava mimic show mean-squared error dropping to $7.7 \times 10^{-4}$ with trace-alignment accuracy at $1.0$ by epoch~2 on a dataset of roughly $185$ traces (\texttt{experiments/policies/CustomJava_logs/metrics.json}). The same run reports Spearman $\rho = 1.0$ and top-$5$ accuracy of $1.0$ on both train and validation splits (\texttt{experiments/policies/summary.json}). Such perfect scores on a small dataset, together with the generalisation failures noted above, indicate that the scorer has effectively memorised the traces rather than learned a robust ordering signal.
+
+\subsection{Cross-Family Comparison}
+\label{sec:discussion-cross}
+
+Contrasting the two designs clarifies their complementary strengths. Symbolic guidance (Design~A) derives its robustness from explicit constraints: frames and roles enforce ontological coherence, salience keeps witness selection aligned with discourse prominence, and the policy comparator chooses among already-constrained partial models. Data-driven guidance (Design~B) offers a pathway to learn plausibility signals and preferences beyond the engineered policy features, but, as implemented here, remains fragile when distributions shift or when supervision is scarce.
+
+From the perspective of the shared runtime architecture, both designs validate that: (i) tableau + salience as the inner loop is effective across guidance families; and (ii) queue-based frontier ordering is a clean interface for swapping guidance mechanisms. The divergence emerges predominantly in how guidance reacts to lexical or structural perturbations, with Design~A absorbing them via constraints and Design~B amplifying them via embeddings.
+
+\subsection{Observed Failures and Stability Gaps}
+\label{sec:discussion-failures}
+
+The error patterns documented in Chapter~\ref{ch:results} coalesce around five themes:
+
+\begin{enumerate}
+  \item \textbf{Lexical drift}: Small word substitutions (e.g., near-synonyms or domain-adjacent nouns) shifted embedding space sufficiently to reorder branches, even when the underlying logical structure was unchanged.
+  \item \textbf{Template sensitivity}: The external heuristic exhibited sensitivity to prompt phrasing and context length, leading to inconsistent rankings across near-identical inputs.
+  \item \textbf{Salience conflicts}: Learned scores occasionally counteracted salience-driven witness selection, producing expansions that ignored discourse-prominence cues critical for anaphora-like choices.
+  \item \textbf{Role swaps}: Ambiguities involving pronouns (e.g., subject/object swaps) remained a frequent failure mode, with learned scorers oscillating between readings across paraphrases.
+  \item \textbf{Sparse supervision}: The human-annotated set improved alignment on a narrow slice of the data but lacked coverage to regularise the scorer against the full space of stories/lexical variations used in evaluation.
+\end{enumerate}
+
+Together, these point to instability outside the training traces. The scoring modules need either (i) richer supervision that encodes discourse constraints directly, or (ii) architectural biases that make those constraints native to the scoring computation.
+
+\subsection{Implications for Guided Model Generation}
+\label{sec:discussion-implications}
+
+The most immediate implication is pragmatic: for the language fragment and ontology covered here, symbolic policies remain the operational solution. They yield dependable search control with transparent failure modes, while still exposing tunables (drain size, timeouts, threads) for engineering trade-offs. 
+
+A second implication concerns hybridisation. Rather than replacing symbolic policies outright, data-driven guidance is better positioned as a constrained re-ranker \emph{after} symbolic pruning has reduced the candidate set. This respects runtime budgets, curtails variance introduced by external heuristics, and limits the exposure of learned scorers to distribution shift. Under this view, stronger salience-aware features and compact, structure-preserving encoders (that read the \emph{tableau state} rather than only text) are likely to be more effective than generic contextual embeddings alone.
+
+Finally, the results reaffirm the value of a clear separation of concerns in the runtime: \emph{(a)} a calculus that enforces sound local expansions; \emph{(b)} salience that steers instantiation; and \emph{(c)} a guidance interface that orders frontier states. Each layer can evolve independently without reinterpreting previous chapters’ formal commitments (cf.\ Chapter~\ref{chap:systemdesign}).
+
+\subsection{Threats to Validity}
+\label{sec:discussion-threats}
+
+We summarise internal and external threats, along with mitigations already applied or recommended.
+
+\paragraph{Internal validity.}
+Synthetic traces dominated supervision for learned scorers; the human-annotated set was small. The external heuristic introduced latency and run-to-run variance. Parallel Java runs (twelve workers) were reported as single trials in the current tables. \emph{Mitigations}: fix seeds and prompt templates; report variance across repeated trials; constrain external heuristic usage to bounded re-ranking; expand human annotations.
+
+\paragraph{External validity.}
+The ontology is static and the language fragment is restricted to short narratives with a controlled vocabulary. Hardware was limited to a single workstation profile. \emph{Mitigations}: broaden ontology coverage and the story set; include more open-domain lexical variation; evaluate on additional hardware profiles; incorporate ablations that vary decay, drain size, and timeout (cf.\ planned ablations in Chapter~\ref{ch:results}, \mbox{Section~\ref{sec:ablations-qual}}).
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+\subsection{Summary of Findings}
+\label{sec:conclusion-summary}
+
+This thesis presented a guided tableau system for natural-language semantic model generation and evaluated two guidance families over a shared runtime:
+
+\begin{itemize}
+  \item \textbf{Design~A (Java, symbolic policies)}: A knowledge-graph-grounded engine (situations, frames, roles, semantic types) with salience at the rule level and frontier ordering via policy comparators. The custom policy provided a stable operational baseline across sequential and parallel settings (cf.\ \mbox{Table~\ref{tab:policy_runtimes_java}}).
+  \item \textbf{Design~B (Python, data-driven)}: A projected event-semantics representation with neural cost functions and an external heuristic. Despite promising training loss and occasional correct branch selections, the guidance was not robust under lexical variation and added latency/variance, preventing consistent reproducible gains (cf.\ \mbox{Section~\ref{sec:discussion-datadriven}}).
+\end{itemize}
+
+Across both designs, the shared calculus and salience mechanism proved effective; the difference lay in how guidance interacted with lexical and structural variation. Symbolic guidance remained reliable; learned guidance exposed stability gaps.
+
+\subsection{Hypothesis Revisited}
+\label{sec:conclusion-hypothesis}
+The empirical results support \textbf{H1} from Chapter~\ref{ch:experiments}: the symbolic Custom policy produced more stable orderings and lower runtime under fixed budgets than learned or external guidance, and rule-level salience contributed to consistent witness selection across thread configurations. The learned/external variants showed promise as re-rankers but did not, in their current form, match the robustness of symbolic control.
+
+\subsection{Contributions}
+\label{sec:conclusion-contributions}
+
+The work contributes:
+
+\begin{enumerate}
+  \item \textbf{A layered system design} that cleanly separates tableau calculus, salience-driven instantiation, and guidance via a priority-queue interface, enabling interchangeable policy/scoring modules without altering the core reasoning loop.
+  \item \textbf{A multithreaded Java policy engine} with ontology integration, salience metadata, and configurable tunables (drain size, timeouts, threads), delivering a reproducible symbolic baseline over the benchmark narratives.
+  \item \textbf{Python prototypes for data-driven guidance} that operate on projected event literals and host neural cost functions and an external heuristic under the same runtime assumptions, thereby documenting the gap between symbolic stability and learned plausibility scoring in this setting.
+  \item \textbf{Empirical comparison} that documents symbolic robustness, learned-policy instability, and their practical consequences. Reproducibility instructions appear in the appendix.
+\end{enumerate}
+
+\subsection{Limitations}
+\label{sec:conclusion-limitations}
+
+Limitations stem from scope and data: (i) a restricted language fragment and static ontology; (ii) limited human annotations compared to the diversity of lexical forms used in evaluation; (iii) single-machine runtime profiles; and (iv) external-heuristic variability that complicates strict runtime accounting. These choices were deliberate to keep the calculus, ontology, and engineering surface area tractable, but they constrain generality.
+
+\subsection{Future Work}
+\label{sec:conclusion-future}
+
+Future extensions follow four lines:
+
+\paragraph{Structured inductive bias for learned guidance.}
+Augment cost functions with features that directly encode tableau state and salience evolution, rather than relying primarily on surface lexical context. Compact encoders that read \emph{events-as-structures} (and their attachment to discourse entities) are a promising direction.
+
+\paragraph{Constrained hybrid re-ranking.}
+Deploy neural/external scorers as re-rankers over small candidate sets pruned by symbolic policies. This limits variance and bounds latency while allowing learned preferences to influence tie-breaks among near-saturated interpretations.
+
+\paragraph{Broader coverage and supervision.}
+Expand ontology coverage, story templates, and human annotations. Where feasible, incorporate contrastive supervision that addresses role swaps and lexical drift directly, and report variance across repeated trials.
+
+\paragraph{Runtime ablations and reproducibility.}
+Systematically vary decay factors, queue drain size, timeouts, and worker counts. Keep prompt templates and seeds fixed for any external heuristic component and report both average and dispersion statistics. Pointers to environment and commands remain in Appendix~\ref{app:reproducibility}.
+
+\vspace{0.5em}
+Overall, symbolic guidance with salience-aware tableau expansion is the most reliable path for guided model generation in this domain. Learned guidance remains a useful complement, especially as a bounded re-ranker, once its inductive biases and supervision better capture the structure of the search state.
