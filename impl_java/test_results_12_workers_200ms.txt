@@ -1,0 +1,94 @@
+Results for story:
+
+  A birthday was celebrated at home.
+  Alice attended the birthday celebration.
+  Alice was at home.
+  Bob attended the birthday celebration.
+  Charlie brought a cake to the birthday celebration.
+  John was at home.
+  Someone murdered Alice at home.
+  David investigated John for a murder of Alice at home.
+  John murdered Alice.
+
+HeuristicStatistics[heuristic=Custom Heuristic, timeMs=1205, exploredModels=3590, closedModels=40, openModels=1529, modelFound=true]
+HeuristicStatistics[heuristic=DFS, timeMs=772, exploredModels=813, closedModels=30, openModels=78, modelFound=true]
+HeuristicStatistics[heuristic=BFS, timeMs=2377, exploredModels=7778, closedModels=19, openModels=5558, modelFound=true]
+---------------------------------------------------
+---------------------------------------------------
+
+Results for story:
+
+  A birthday was celebrated at home.
+  Alice attended the birthday celebration.
+  Alice was at home.
+  Bob attended the birthday celebration.
+  Charlie brought a cake to the birthday celebration.
+  John was at home.
+  Someone murdered Alice at home.
+  David investigated John for a murder of Alice at home.
+  Charlie did not murder Alice.
+  John murdered Alice.
+
+HeuristicStatistics[heuristic=Custom Heuristic, timeMs=1398, exploredModels=4406, closedModels=41, openModels=3098, modelFound=true]
+HeuristicStatistics[heuristic=DFS, timeMs=435, exploredModels=476, closedModels=40, openModels=157, modelFound=true]
+HeuristicStatistics[heuristic=BFS, timeMs=5357, exploredModels=17066, closedModels=19, openModels=15529, modelFound=true]
+---------------------------------------------------
+---------------------------------------------------
+
+Results for story:
+
+  A birthday was celebrated at home.
+  Alice attended the birthday celebration.
+  Alice was at home.
+  Bob attended the birthday celebration.
+  Charlie brought a cake to the birthday celebration.
+  John was at home.
+  Someone murdered Alice at home.
+  David investigated John for a murder of Alice at home.
+  David investigated Charlie for a murder of Alice at home.
+  Charlie did not murder Alice.
+  John murdered Alice.
+
+HeuristicStatistics[heuristic=Custom Heuristic, timeMs=1776, exploredModels=4982, closedModels=47, openModels=3593, modelFound=true]
+HeuristicStatistics[heuristic=DFS, timeMs=1227, exploredModels=944, closedModels=35, openModels=221, modelFound=true]
+HeuristicStatistics[heuristic=BFS, timeMs=3498, exploredModels=7214, closedModels=19, openModels=9364, modelFound=true]
+---------------------------------------------------
+---------------------------------------------------
+
+Results for story:
+
+  A birthday was celebrated at home.
+  Alice attended the birthday celebration.
+  Alice was at home.
+  Bob attended the birthday celebration.
+  Charlie brought a cake to the birthday celebration.
+  John was at home.
+  Someone murdered Alice at home.
+  David investigated John for a murder of someone at some location.
+  John murdered Alice.
+
+HeuristicStatistics[heuristic=Custom Heuristic, timeMs=831, exploredModels=3578, closedModels=44, openModels=1506, modelFound=true]
+HeuristicStatistics[heuristic=DFS, timeMs=287537, exploredModels=208774, closedModels=7232, openModels=75, modelFound=true]
+HeuristicStatistics[heuristic=BFS, timeMs=551528, exploredModels=1247894, closedModels=8484, openModels=62185, modelFound=true]
+---------------------------------------------------
+---------------------------------------------------
+
+Results for story:
+
+  A birthday was celebrated at home.
+  Alice attended the birthday celebration.
+  Alice was at home.
+  Bob attended the birthday celebration.
+  Charlie brought a cake to the birthday celebration.
+  John was at home.
+  Someone murdered Alice at home.
+  David investigated John for a murder of someone at some location.
+  Charlie did not murder Alice.
+  John murdered Alice.
+
+HeuristicStatistics[heuristic=Custom Heuristic, timeMs=1361, exploredModels=3842, closedModels=46, openModels=2829, modelFound=true]
+HeuristicStatistics[heuristic=DFS, timeMs=330983, exploredModels=141149, closedModels=30, openModels=191, modelFound=true]
+HeuristicStatistics[heuristic=BFS, timeMs=3338, exploredModels=7730, closedModels=19, openModels=9092, modelFound=true]
+---------------------------------------------------
+---------------------------------------------------
+
