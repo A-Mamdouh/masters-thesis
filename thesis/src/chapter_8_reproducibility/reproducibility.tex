@@ -1,7 +1,8 @@
 \chapter{Reproducibility}
 \label{app:reproducibility}
 
-This appendix explains how to rebuild all experiments reported in Chapter~\ref{ch:experiments} using the two reference implementations that live in this repository: the Java engine under \texttt{design\_java/} (Design~A) and the Python port under \texttt{python\_port/} (Design~B). The instructions assume the project root \texttt{/home/ahmed/projects/masters}; adjust the paths if you cloned the repository elsewhere.
+This appendix explains how to rebuild all experiments reported in Chapter~\ref{ch:experiments} using the two reference implementations that live in this repository: the Java engine under \texttt{design\_java/} (Design~A) and the Python port under \texttt{python\_port/} (Design~B). The instructions assume the project root \texttt{/home/ahmed/projects/masters}; adjust the paths if you cloned the repository elsewhere.\\
+This thesis is fully versioned at \href{https://github.com/A-Mamdouh/masters-thesis}{github.com/A-Mamdouh/masters-thesis}
 
 \section{Environment}
 \begin{itemize}
@@ -26,8 +27,10 @@ This appendix explains how to rebuild all experiments reported in Chapter~\ref{c
   \item \textbf{Design~B:} python\_port/
     \begin{compactitem}
       \item src/nls\_python/model\_generation/: tableau port, policies, neural helpers.
-      \item data/: annotated story sets (train.json, val.json, test.json, java\_design\_test.json).
-      \item experiments/policies/: saved logs (story\_bank\_results.txt, annotated\_test\_results.txt), summaries and checkpoints.
+      \item data/: annotated story sets \\
+        (train.json, val.json, test.json, java\_design\_test.json).
+      \item experiments/policies/: saved logs (story\_bank\_results.txt, \\
+      annotated\_test\_results.txt), summaries and checkpoints.
       \item scripts/: bash helpers for batch experiments.
     \end{compactitem}
 \end{itemize}
@@ -117,7 +120,8 @@ This overwrites the earlier log with fresh neural numbers. To keep both versions
 
 \section{Logging and seed management}
 \begin{itemize}
-  \item \textbf{Logging.} Both implementations log individual story blocks followed by aggregate statistics. Keep the raw files (test\_results\_*.txt and experiments/policies/*.txt); the Results chapter cites these exact paths.
+  \item \textbf{Logging.} Both implementations log individual story blocks followed by aggregate statistics.\\
+  Keep the raw files (test\_results\_*.txt and experiments/policies/*.txt); the Results chapter cites these exact paths.
   \item \textbf{Seeds.} Java relies on deterministic ordering; no additional flags are required. Python scripts set seeds internally, but you can override them via environment variables (\texttt{PYTHONHASHSEED}, \texttt{TORCH\_SEED}) or CLI options (see \texttt{python\_port/scripts/} for examples).
   \item \textbf{Hardware notes.} All timings in the thesis were collected on a 6-core/12-thread CPU with 32~GB RAM. When comparing against the reported numbers, ensure that the timeout, drain-size, and worker-count flags match those shown above and in Table~\ref{tab:run_configurations}.
 \end{itemize}

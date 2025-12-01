@@ -1,7 +1,7 @@
 \chapter{Discussion and Conclusion}
 \label{ch:discussion-conclusion}
 
-This chapter interprets the empirical findings of Chapter~\ref{ch:results}, ties them back to the guidance paradigms and design principles in Chapter~\ref{chap:systemdesign}, and states the main conclusions. We separate \emph{Discussion} (Section~\ref{sec:discussion}) from \emph{Conclusion} (Section~\ref{sec:conclusion}) to keep interpretation distinct from summary and outlook. The terminology remains consistent: a model generator over a tableau, salience at the rule level, and guidance from either symbolic policies (Design~A, Java) or learned scorers (Design~B, Python).
+This chapter interprets the empirical findings of Chapter~\ref{ch:results}, ties them back to the guidance paradigms and design principles in Chapter~\ref{cp:systemdesign}, and states the main conclusions. We separate \emph{Discussion} (Section~\ref{sec:discussion}) from \emph{Conclusion} (Section~\ref{sec:conclusion}) to keep interpretation distinct from summary and outlook. The terminology remains consistent: a model generator over a tableau, salience at the rule level, and guidance from either symbolic policies (Design~A, Java) or learned scorers (Design~B, Python).
 
 \section{Discussion}
 \label{sec:discussion}
@@ -56,7 +56,7 @@ The most immediate implication is pragmatic: for the language fragment and ontol
 
 A second implication concerns hybridisation. Rather than replacing symbolic policies outright, data-driven guidance is better positioned as a constrained re-ranker \emph{after} symbolic pruning has reduced the candidate set. This respects runtime budgets, curtails variance introduced by external heuristics, and limits the exposure of learned scorers to distribution shift. Under this view, stronger salience-aware features and compact, structure-preserving encoders (that read the \emph{tableau state} rather than only text) are likely to be more effective than generic contextual embeddings alone.
 
-Finally, the results reaffirm the value of a clear separation of concerns in the runtime: \emph{(a)} a calculus that enforces sound local expansions; \emph{(b)} salience that steers instantiation; and \emph{(c)} a guidance interface that orders frontier states. Each layer can evolve independently without reinterpreting previous chapters’ formal commitments (cf.\ Chapter~\ref{chap:systemdesign}).
+Finally, the results reaffirm the value of a clear separation of concerns in the runtime: \emph{(a)} a calculus that enforces sound local expansions; \emph{(b)} salience that steers instantiation; and \emph{(c)} a guidance interface that orders frontier states. Each layer can evolve independently without reinterpreting previous chapters’ formal commitments (cf.\ Chapter~\ref{cp:systemdesign}).
 
 \subsection{Threats to Validity}
 \label{sec:discussion-threats}
