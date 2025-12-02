@@ -13,7 +13,7 @@
 .*.lb
 
 **/*SAVE-ERROR
-
+!src/thesis.pdf
 **/.DS_Store
 **/*.pdf
 
