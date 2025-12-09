@@ -85,11 +85,9 @@
     \def\Titel##1{\gdef\@Titel{##1}}
     \def\Name##1{\gdef\@Name{##1}}
     \def\Vorname##1{\gdef\@Vorname{##1}}
-    \def\Geburtsort##1{\gdef\@Geburtsort{##1}}
-    \def\Geburtsdatum##1{\gdef\@Geburtsdatum{##1}}
+    % \def\Geburtsort##1{\gdef\@Geburtsort{##1}}
+    % \def\Geburtsdatum##1{\gdef\@Geburtsdatum{##1}}
     \def\Betreuer##1{\gdef\@Betreuer{##1}}
-    \def\Start##1{\gdef\@Start{##1}}
-    \def\Ende##1{\gdef\@Ende{##1}}
 }
 % Start of titlepage
 \RequirePackage{adjustbox}
@@ -130,9 +128,6 @@
 \end{center}
 \begin{center}
 \@Vorname\ \@Name \\[2mm]
-\ifnum\language=\l@english born \else Geboren am\fi~
-\@Geburtsdatum\ in \@Geburtsort \\% [45mm]
-\vfill
 \end{center}
 \begin{center}
 \ifnum\language=\l@english\relax
@@ -143,7 +138,7 @@
 \\[5mm]
 Lehrstuhl f"ur Wissensrepräsentation und -verarbeitung \\
 Department Informatik \\
-Friedrich-Alexander-Universit"at Erlangen-N"urnberg.\\[5mm]
+[5mm]
 \@ifundefined{ZweitInstitut}{}{%
 \ifnum\language=\l@english\relax
   in Cooperation with
@@ -155,9 +150,7 @@ Friedrich-Alexander-Universit"at Erlangen-N"urnberg.\\[5mm]
 }
 \end{center}
 \begin{flushleft}
-\ifnum\language=\l@english\relax Advisor\else Betreuer\fi: \@Betreuer \\[2mm]
-\ifnum\language=\l@english\relax Started\else Beginn der Arbeit\fi: \@Start \\[2mm]
-\ifnum\language=\l@english\relax Finished\else Abgabe der Arbeit\fi: \@Ende \\
+\ifnum\language=\l@english\relax Supervised by\else Betreuer\fi: \@Betreuer \\[2mm]
 \end{flushleft}
 \clearpage
 \egroup}
@@ -169,9 +162,7 @@ Friedrich-Alexander-Universit"at Erlangen-N"urnberg.\\[5mm]
     \def\Titel##1{\gdef\@Titel{##1}\typeout{Defining Titel}}
     \def\Name##1{\gdef\@Name{##1}}
     \def\Vorname##1{\gdef\@Vorname{##1}}
-    \def\Jahr##1{\gdef\@Jahr{##1}}
     \def\AkadGrad##1{\gdef\@AkadGrad{##1}}
-    \def\Ort##1{\gdef\@Ort{##1}}
 }
 \def\enddissdeckblatt{%
 
